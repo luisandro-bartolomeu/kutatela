@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: kutatela-mama
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: jdbc:h2:mem:kutateladb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+kutatela:
+  africastalking:
+    username: ${AFRICASTALKING_USERNAME:sandbox}
+    api-key: ${AFRICASTALKING_API_KEY:sandbox_key}
+    short-code: ${AFRICASTALKING_SHORT_CODE:*123#}
+    sender-id: ${AFRICASTALKING_SENDER_ID:KUTATELA}
+    enabled: ${AFRICASTALKING_ENABLED:false}
+  ai:
+    gemini-api-key: ${GEMINI_API_KEY:mock_key}
+    model: ${AI_MODEL:gemini-1.5-flash}
+    temperature: 0.2
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db:5432/kutatela_db}
+    username: ${SPRING_DATASOURCE_USERNAME:kutatela_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:kutatela_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update

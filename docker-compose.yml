@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Database Service (PostgreSQL 16)
+  db:
+    image: postgres:16-alpine
+    container_name: kutatela_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kutatela_db}
+      POSTGRES_USER: ${POSTGRES_USER:-kutatela_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kutatela_pass_2026}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kutatela_user} -d ${POSTGRES_DB:-kutatela_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kutatela_network
+
+  # Application Service (Spring Boot 3 REST API & USSD Gateway)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kutatela_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-kutatela_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-kutatela_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-kutatela_pass_2026}
+      AFRICASTALKING_USERNAME: ${AFRICASTALKING_USERNAME:-sandbox}
+      AFRICASTALKING_API_KEY: ${AFRICASTALKING_API_KEY:-sandbox_key}
+      AFRICASTALKING_ENABLED: ${AFRICASTALKING_ENABLED:-false}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_key}
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    networks:
+      - kutatela_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  kutatela_network:
+    driver: bridge
