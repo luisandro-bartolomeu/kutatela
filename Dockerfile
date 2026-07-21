@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Copy maven wrapper & pom.xml first to leverage Docker layer caching for dependencies
+# Copy maven wrapper & pom.xml first to leverage Docker layer caching
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
@@ -21,19 +21,15 @@ FROM eclipse-temurin:21-jre-alpine AS runner
 
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup -S kutatela && adduser -S kutatela -G kutatela
+# Create data directory for persistent H2 database
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Copy compiled jar from builder stage
 COPY --from=builder /app/target/kutatela-mama-1.0.0-SNAPSHOT.jar app.jar
 
-# Set ownership to non-root user
-RUN chown -R kutatela:kutatela /app
-USER kutatela
-
 EXPOSE 8080
 
-ENV SPRING_PROFILES_ACTIVE=prod
+ENV PORT=8080
 ENV JAVA_OPTS="-Xms256m -Xmx512m"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
