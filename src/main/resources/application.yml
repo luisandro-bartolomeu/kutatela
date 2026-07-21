@@ -30,7 +30,7 @@ kutatela:
   africastalking:
     username: ${AFRICASTALKING_USERNAME:sandbox}
     api-key: ${AFRICASTALKING_API_KEY:sandbox_key}
-    short-code: ${AFRICASTALKING_SHORT_CODE:*123#}
+    short-code: ${AFRICASTALKING_SHORT_CODE:*384*23898#}
     sender-id: ${AFRICASTALKING_SENDER_ID:KUTATELA}
     enabled: ${AFRICASTALKING_ENABLED:false}
   ai:

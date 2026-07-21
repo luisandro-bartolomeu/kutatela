@@ -36,7 +36,7 @@ public class UssdSessionService {
     }
 
     public String processUssdRequest(String sessionId, String serviceCode, String phoneNumber, String text) {
-        log.info("📞 USSD Request -> sessionId: {}, phone: {}, text: '{}'", sessionId, phoneNumber, text);
+        log.info("📞 USSD Request -> sessionId: {}, serviceCode: {}, phone: {}, text: '{}'", sessionId, serviceCode, phoneNumber, text);
 
         String trimmedText = text != null ? text.trim() : "";
         String[] parts = trimmedText.isEmpty() ? new String[0] : trimmedText.split("\\*");
@@ -225,14 +225,14 @@ public class UssdSessionService {
     }
 
     private String formatTriageResponse(TriageRecord record) {
-        return "END 🔍 Análise do sintoma:\n" +
-               "- " + record.getAiAnalysis() + "\n\n" +
-               "📋 Orientações:\n" +
-               "✅ " + record.getHomeCareRecommendations() + "\n\n" +
-               record.getAlarmLevel().getEmoji() + " Sinais de alarme:\n" +
-               "- " + record.getAlarmSignals() + "\n\n" +
+        String analysis = record.getAiAnalysis();
+        if (analysis != null && analysis.length() > 90) {
+            analysis = analysis.substring(0, 87) + "...";
+        }
+        return "END 🔍 Análise: " + analysis + "\n\n" +
+               "📋 Cuidados: " + record.getHomeCareRecommendations() + "\n" +
                "🏥 " + record.getHealthCenterAdvice() + "\n" +
-               "📱 Enviamos SMS com o resumo completo!";
+               "📱 Resumo detalhado enviado por SMS!";
     }
 
     private String handleWeeklyTipsMenu(String[] parts, Mother mother, Baby baby) {
