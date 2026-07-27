@@ -21,7 +21,7 @@ services:
       AFRICASTALKING_API_KEY: ${AFRICASTALKING_API_KEY:-sandbox_key}
       AFRICASTALKING_ENABLED: ${AFRICASTALKING_ENABLED:-false}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-mock_key}
-      GOWA_API_URL: ${GOWA_API_URL:-http://whatsapp:3000}
+      GOWA_API_URL: ${GOWA_API_URL:-https://go-whatsapp-web-multidevice-production-4328.up.railway.app}
       GOWA_ENABLED: ${GOWA_ENABLED:-true}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     volumes:

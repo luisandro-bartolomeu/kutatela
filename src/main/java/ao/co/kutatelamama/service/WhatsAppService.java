@@ -39,7 +39,7 @@ public class WhatsAppService {
     private final Map<String, WhatsAppSession> sessionCache = new ConcurrentHashMap<>();
     private static final long SESSION_TIMEOUT_MS = 10 * 60 * 1000L; // 10 minutos em ms
 
-    @Value("${kutatela.gowa.api-url:${gowa.api.url:http://localhost:3000}}")
+    @Value("${kutatela.gowa.api-url:${gowa.api.url:https://go-whatsapp-web-multidevice-production-4328.up.railway.app}}")
     private String gowaBaseUrl;
 
     @Value("${kutatela.gowa.device-id:${gowa.api.default-device-id:kutatela_mama}}")

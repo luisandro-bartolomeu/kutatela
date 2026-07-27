@@ -32,7 +32,7 @@ Certifique-se de que a aplicação backend está a rodar com as variáveis de am
   Defina as variáveis de ambiente no container/painel:
   ```env
   SPRING_PROFILES_ACTIVE=prod
-  GOWA_API_URL=http://localhost:3000   # Endereço onde o Gowa está a rodar
+  GOWA_API_URL=https://go-whatsapp-web-multidevice-production-4328.up.railway.app
   GOWA_ENABLED=true
   GEMINI_API_KEY=sua_chave_gemini_aqui
   ```

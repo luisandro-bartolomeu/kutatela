@@ -39,7 +39,7 @@ kutatela:
     model: ${AI_MODEL:deepseek-chat}
     temperature: 0.2
   gowa:
-    api-url: ${GOWA_API_URL:http://localhost:3000}
+    api-url: ${GOWA_API_URL:https://go-whatsapp-web-multidevice-production-4328.up.railway.app}
     device-id: ${GOWA_DEVICE_ID:kutatela_mama}
     enabled: ${GOWA_ENABLED:true}
 
