@@ -167,6 +167,7 @@ public class UssdSessionService {
             }
 
             // Se ja estiver no resultado da Triagem (pilha tamanho >= 3 na opcao 2)
+            // Se já estiver no resultado da Triagem (pilha tamanho >= 3 na opção 2)
             if (stack.size() >= 3 && "2".equals(stack.get(0))) {
                 if ("1".equals(t)) {
                     stack.clear();
@@ -175,10 +176,15 @@ public class UssdSessionService {
                 } else if ("0".equals(t) || "00".equals(t)) {
                     stack.clear(); // Volta ao menu principal
                     continue;
+                } else {
+                    // Se a mãe enviar qualquer outra opção (ex: 2, 3, 4, 5, 6 ou texto livre),
+                    // limpa a triagem anterior e interpreta 't' no menu de triagem "2"
+                    stack.clear();
+                    stack.add("2");
                 }
             }
 
-            // Se ja estiver na tela de confirmacao de Registar/Atualizar Dados (pilha tamanho >= 3 na opcao 4)
+            // Se já estiver na tela de confirmação de Registar/Atualizar Dados (pilha tamanho >= 3 na opção 4)
             if (stack.size() >= 3 && "4".equals(stack.get(0))) {
                 if ("0".equals(t) || "00".equals(t)) {
                     stack.clear(); // Volta ao menu principal
@@ -186,7 +192,6 @@ public class UssdSessionService {
                 } else {
                     stack.clear();
                     stack.add("4"); // Volta ao menu de registo
-                    continue;
                 }
             }
 
@@ -203,7 +208,12 @@ public class UssdSessionService {
                     stack.remove(stack.size() - 1);
                 }
             } else {
-                if (!isLeafScreenState) {
+                if (isLeafScreenState) {
+                    String parentMenu = stack.get(0);
+                    stack.clear();
+                    stack.add(parentMenu);
+                    stack.add(t);
+                } else {
                     stack.add(t);
                 }
             }
@@ -342,28 +352,34 @@ public class UssdSessionService {
                 if ("1".equals(choice)) return "Choro fraco e choramingado";
                 if ("2".equals(choice)) return "Choro forte e contínuo";
                 if ("3".equals(choice)) return "Choro agudo e estridente";
-                return "Choro com gemidos";
+                if ("4".equals(choice)) return "Choro com gemidos";
+                return choice;
             case BORBULHAS_ERUPCOES:
                 if ("1".equals(choice)) return "Bolinhas vermelhas simples no corpo";
                 if ("2".equals(choice)) return "Manchas vermelhas com febre";
                 if ("3".equals(choice)) return "Assadura grave na fralda";
-                return "Crostas amareladas";
+                if ("4".equals(choice)) return "Crostas amareladas";
+                return choice;
             case FEBRE:
                 if ("1".equals(choice)) return "Febre baixa (37.5C - 38C)";
                 if ("2".equals(choice)) return "Febre alta (>38.5C) com corpo quente";
-                return "Febre com estremecimento / prostração";
+                if ("3".equals(choice)) return "Febre com estremecimento / prostração";
+                return choice;
             case DIARREIA_VOMITOS:
                 if ("1".equals(choice)) return "Fezes muito líquidas (>3x/dia)";
                 if ("2".equals(choice)) return "Vómitos após cada mamada";
-                return "Olhos fundos / sem lágrimas (desidratação)";
+                if ("3".equals(choice)) return "Olhos fundos / sem lágrimas (desidratação)";
+                return choice;
             case DIFICULDADE_MAMAR:
                 if ("1".equals(choice)) return "Bebé rejeita a mama";
                 if ("2".equals(choice)) return "Pega fraca / mamada curta";
-                return "Mãe com dor intensa / seios empedrados";
+                if ("3".equals(choice)) return "Mãe com dor intensa / seios empedrados";
+                return choice;
             default:
                 if ("1".equals(choice)) return "Tosse ou cansaço no peito";
                 if ("2".equals(choice)) return "Pele ou olhos amarelados";
-                return "Olhos remelados / com secreção";
+                if ("3".equals(choice)) return "Olhos remelados / com secreção";
+                return choice;
         }
     }
 
