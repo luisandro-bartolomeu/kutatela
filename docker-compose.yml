@@ -20,10 +20,27 @@ services:
       AFRICASTALKING_USERNAME: ${AFRICASTALKING_USERNAME:-sandbox}
       AFRICASTALKING_API_KEY: ${AFRICASTALKING_API_KEY:-sandbox_key}
       AFRICASTALKING_ENABLED: ${AFRICASTALKING_ENABLED:-false}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-mock_key}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-mock_key}
+      GOWA_API_URL: ${GOWA_API_URL:-http://whatsapp:3000}
+      GOWA_ENABLED: ${GOWA_ENABLED:-true}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     volumes:
       - h2_data:/app/data
+    depends_on:
+      - whatsapp
+
+  # GoWA Engine (WhatsApp REST API - Docker Service)
+  whatsapp:
+    image: aldinokem/gowa:latest
+    container_name: kutatela_whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      WHATSAPP_WEBHOOK_URL: ${WHATSAPP_WEBHOOK_URL:-http://app:8080/api/v1/whatsapp/webhook}
+    volumes:
+      - gowa_data:/app/db
 
   # Optional PostgreSQL Database (Use if required for external production DB)
   db:
@@ -43,4 +60,6 @@ services:
 
 volumes:
   h2_data:
+  gowa_data:
   postgres_data:
+

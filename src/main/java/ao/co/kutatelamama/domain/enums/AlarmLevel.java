@@ -1,9 +1,9 @@
 package ao.co.kutatelamama.domain.enums;
 
 public enum AlarmLevel {
-    NORMAL("Normal", "💚"),
-    WARNING("Atenção", "⚠️"),
-    URGENT("Urgente", "🚨");
+    NORMAL("Normal", "[Normal]"),
+    WARNING("Atenção", "[Atenção]"),
+    URGENT("Urgente", "[Urgente]");
 
     private final String title;
     private final String emoji;

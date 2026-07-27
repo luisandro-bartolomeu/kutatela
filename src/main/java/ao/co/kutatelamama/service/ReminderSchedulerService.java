@@ -47,7 +47,7 @@ public class ReminderSchedulerService {
      */
     @Scheduled(cron = "0 0 8 * * ?") // Every day at 8:00 AM
     public void sendVaccinationReminders() {
-        log.info("⏰ [SCHEDULER] Running daily vaccination reminder check...");
+        log.info("[SCHEDULER] Running daily vaccination reminder check...");
         triggerVaccinationReminders();
     }
 
@@ -56,7 +56,7 @@ public class ReminderSchedulerService {
      */
     @Scheduled(cron = "0 0 9 * * MON") // Every Monday at 9:00 AM
     public void sendWeeklyCareTips() {
-        log.info("⏰ [SCHEDULER] Running weekly maternal care tips distribution...");
+        log.info("[SCHEDULER] Running weekly maternal care tips distribution...");
         triggerWeeklyTips();
     }
 
@@ -74,7 +74,7 @@ public class ReminderSchedulerService {
             if (baby != null && baby.getMother() != null) {
                 Mother mother = baby.getMother();
                 String message = String.format(
-                    "Kutatela Mama 🌿 Lembrete de Vacina! O(A) bebé %s tem agendada a vacina %s para o dia %s. Leve o cartão de vacinas ao centro de saúde mais próximo!",
+                    "Kutatela Mama - Lembrete de Vacina! O(A) bebé %s tem agendada a vacina %s para o dia %s. Leve o cartão de vacinas ao centro de saúde mais próximo!",
                     baby.getFullName(),
                     rec.getVaccine().getName(),
                     rec.getScheduledDate().toString()
@@ -102,7 +102,7 @@ public class ReminderSchedulerService {
 
                 if (tip != null) {
                     String msg = String.format(
-                        "Kutatela Mama: Lembrete semanal - Bebé com %d semanas! %s Cuide-se também, mãe! 🌿",
+                        "Kutatela Mama: Lembrete semanal - Bebé com %d semanas! %s Cuide-se também, mãe!",
                         weekAge,
                         tip.getContentPt()
                     );

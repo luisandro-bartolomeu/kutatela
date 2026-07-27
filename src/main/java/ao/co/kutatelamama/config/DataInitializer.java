@@ -63,24 +63,24 @@ public class DataInitializer implements CommandLineRunner {
         if (weeklyTipRepository.count() > 0) return;
 
         List<WeeklyTip> tips = List.of(
-            new WeeklyTip(1, "AMAMENTACAO", "Amamentação Exclusiva",
-                "Kutatela Mama 🌿 (Semana 1): O colostro (primeiro leite) é a primeira vacina do bebé! Dê apenas leite materno, sem água ou chá. Amamente sempre que o bebé pedir.",
-                "Kutatela Mama 🌿 (Osemana 1): Ovele yososo yondamba ya moso yimue yetu! Echa owele wo ina likamwe, ka ku ka kuate ovava ale sha chae."),
+            new WeeklyTip(1, "AMAMENTACAO", "Amamentacao Exclusiva",
+                "O colostro (primeiro leite) e a primeira vacina do bebe! De apenas leite materno, sem agua ou cha. Amamente sempre que o bebe pedir.",
+                "Ovele yososo yondamba ya moso yimue yetu! Echa owele wo ina likamwe, ka ku ka kuate ovava ale sha chae."),
             new WeeklyTip(2, "HIGIENE", "Cuidados com o Coto Umbilical",
-                "Kutatela Mama 🌿 (Semana 2): Mantenha o umbigo do bebé limpo e seco. Lave as mãos antes de tocar. Não coloque moedas, faixas ou substâncias caseiras.",
-                "Kutatela Mama 🌿 (Osemana 2): Sukula o-umbigo yo m̃õmbe i kuate eke limue. Ka ku ka kuate olombongo ale ovima vikuavo."),
-            new WeeklyTip(4, "SONO_SEGURO", "Sono Seguro do Recém-Nascido",
-                "Kutatela Mama 🌿 (1 Mês): Deite o bebé sempre de barriga para cima numa superfície firme. Mantenha o espaço sem almofadas soltas ou mantas pesadas.",
-                "Kutatela Mama 🌿 (1 Osãi): Pekisa o-m̃õmbe vo menda yene okuti imba eye peke. Ka ku ka kuata oyombondo via pama."),
-            new WeeklyTip(8, "ESTIMULACAO", "Estimulação e Desenvolvimento aos 2 Meses",
-                "Kutatela Mama 🌿 (2 Meses): O seu bebé já começa a sorrir e a seguir rostos com os olhos! Converse com ele suavemente e cante canções de embalar.",
-                "Kutatela Mama 🌿 (2 Ovosãi): O-m̃õmbe yove ya tunda oku yolula! Vansulula laye komuenyo umue uwa laye."),
-            new WeeklyTip(12, "VACINACAO", "Lembrete de Vacinação dos 3-4 Meses",
-                "Kutatela Mama 🌿 (3 Meses): Mantenha o cartão de vacinas em dia! Procure o Posto de Saúde mais próximo para verificar as vacinas dos 4 meses.",
-                "Kutatela Mama 🌿 (3 Ovosãi): Enda k'osipitali oco o-m̃õmbe yove i kuate o-vacina yaye yo 4 ovosãi!"),
-            new WeeklyTip(24, "NUTRICAO", "Introdução Alimentar Aos 6 Meses",
-                "Kutatela Mama 🌿 (6 Meses): Parabéns! Aos 6 meses pode iniciar papinhas de pirão fino, legumes amassados e frutas locais, continuando a amamentar.",
-                "Kutatela Mama 🌿 (6 Ovosãi): Cali eye otembo yo ku echa yulia yakua funa p'osipitali, momo echa ko leka okulia wo pirão fine.")
+                "Mantenha o umbigo do bebe limpo e seco. Lave as maos antes de tocar. Nao coloque moedas, faixas ou substancias caseiras.",
+                "Sukula o-umbigo yo m̃õmbe i kuate eke limue. Ka ku ka kuate olombongo ale ovima vikuavo."),
+            new WeeklyTip(4, "SONO_SEGURO", "Sono Seguro do Recem-Nascido",
+                "Deite o bebe sempre de barriga para cima numa superficie firme. Mantenha o espaco sem almofadas soltas ou mantas pesadas.",
+                "Pekisa o-m̃õmbe vo menda yene okuti imba eye peke. Ka ku ka kuata oyombondo via pama."),
+            new WeeklyTip(8, "ESTIMULACAO", "Estimulacao e Desenvolvimento",
+                "O seu bebe ja comeca a sorrir e a seguir rostos com os olhos! Converse com ele suavemente e cante cancoes de embalar.",
+                "O-m̃õmbe yove ya tunda oku yolula! Vansulula laye komuenyo umue uwa laye."),
+            new WeeklyTip(12, "VACINACAO", "Lembrete de Vacinacao",
+                "Mantenha o cartao de vacinas em dia! Procure o Posto de Saude mais proximo para verificar as vacinas.",
+                "Enda k'osipitali oco o-m̃õmbe yove i kuate o-vacina yaye yo 4 ovosãi!"),
+            new WeeklyTip(24, "NUTRICAO", "Nutricao e Introducao Alimentar",
+                "Aos 6 meses pode iniciar papinhas de pirao fino, legumes amassados e frutas locais, continuando a amamentar.",
+                "Cali eye otembo yo ku echa yulia yakua funa p'osipitali, momo echa ko leka okulia wo pirão fine.")
         );
 
         weeklyTipRepository.saveAll(tips);

@@ -34,6 +34,14 @@ kutatela:
     sender-id: ${AFRICASTALKING_SENDER_ID:KUTATELA}
     enabled: ${AFRICASTALKING_ENABLED:false}
   ai:
-    gemini-api-key: ${GEMINI_API_KEY:mock_key}
-    model: ${AI_MODEL:gemini-1.5-flash}
+    deepseek-api-key: ${DEEPSEEK_API_KEY:mock_key}
+    deepseek-url: ${DEEPSEEK_URL:https://api.deepseek.com/v1/chat/completions}
+    model: ${AI_MODEL:deepseek-chat}
     temperature: 0.2
+  gowa:
+    api-url: ${GOWA_API_URL:http://localhost:3000}
+    device-id: ${GOWA_DEVICE_ID:kutatela_mama}
+    enabled: ${GOWA_ENABLED:true}
+
+
+
