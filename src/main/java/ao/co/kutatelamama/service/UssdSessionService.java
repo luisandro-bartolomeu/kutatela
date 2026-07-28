@@ -133,7 +133,7 @@ public class UssdSessionService {
             case "5":
                 return "END 🟢 Obrigado por usar o Kutatela Mama.\nCuidar da mãe é cuidar do futuro!";
             default:
-                return "CON Opção inválida.\n" + buildMainMenu(mother);
+                return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + buildMainMenu(mother);
         }
     }
 
@@ -161,26 +161,37 @@ public class UssdSessionService {
             String t = token.trim();
             if (t.isEmpty()) continue;
 
-            // Ignora o código de serviço caso venha incluído no texto (ex: 384, 23898, 123)
-            if (stack.isEmpty() && (t.contains("384") || t.contains("23898") || t.contains("123"))) {
+            // Ignora o código de serviço caso venha incluído no texto (ex: 384, 23898, 123, 404)
+            if (stack.isEmpty() && (t.contains("384") || t.contains("23898") || t.contains("123") || t.contains("404"))) {
                 continue;
             }
 
-            // Se ja estiver no resultado da Triagem (pilha tamanho >= 3 na opcao 2)
-            // Se já estiver no resultado da Triagem (pilha tamanho >= 3 na opção 2)
+            // Se a opção principal for inválida, limpa a pilha
+            if (stack.size() == 1 && !isMainChoiceValid(stack.get(0))) {
+                stack.clear();
+            }
+
+            // Se o sub-menu for inválido, limpa a escolha do sub-menu
+            if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1))) {
+                stack.remove(1);
+            }
+
+            // Se já esteve na tela de resultado da Triagem (pilha tamanho >= 3 na opção 2)
             if (stack.size() >= 3 && "2".equals(stack.get(0))) {
-                if ("1".equals(t)) {
-                    stack.clear();
-                    stack.add("2"); // Volta ao menu de Triagem
-                    continue;
-                } else if ("0".equals(t) || "00".equals(t)) {
-                    stack.clear(); // Volta ao menu principal
-                    continue;
-                } else {
-                    // Se a mãe enviar qualquer outra opção (ex: 2, 3, 4, 5, 6 ou texto livre),
-                    // limpa a triagem anterior e interpreta 't' no menu de triagem "2"
-                    stack.clear();
-                    stack.add("2");
+                if (!"6".equals(stack.get(1)) && !isValidDetailChoice(getCategoryFromChoice(stack.get(1)), stack.get(2))) {
+                    stack.remove(2);
+                } else if (stack.size() >= 3) {
+                    if ("1".equals(t)) {
+                        stack.clear();
+                        stack.add("2"); // Volta ao menu de Triagem
+                        continue;
+                    } else if ("0".equals(t) || "00".equals(t)) {
+                        stack.clear(); // Volta ao menu principal
+                        continue;
+                    } else {
+                        stack.clear();
+                        stack.add("2");
+                    }
                 }
             }
 
@@ -218,7 +229,65 @@ public class UssdSessionService {
                 }
             }
         }
+
+        // Limpeza final do topo da pilha caso o último elemento seja um item numérico inválido
+        if (stack.size() == 1 && !isMainChoiceValid(stack.get(0))) {
+            stack.clear();
+        } else if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1))) {
+            stack.remove(1);
+        } else if (stack.size() >= 3 && "2".equals(stack.get(0)) && !"6".equals(stack.get(1))) {
+            if (!isValidDetailChoice(getCategoryFromChoice(stack.get(1)), stack.get(2))) {
+                stack.remove(2);
+            }
+        }
+
         return stack.toArray(new String[0]);
+    }
+
+    private boolean isMainChoiceValid(String choice) {
+        return "1".equals(choice) || "2".equals(choice) || "3".equals(choice) || "4".equals(choice) || "5".equals(choice);
+    }
+
+    private boolean isSubChoiceValid(String mainChoice, String subChoice) {
+        if ("1".equals(mainChoice)) {
+            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice);
+        }
+        if ("2".equals(mainChoice)) {
+            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice) || "5".equals(subChoice) || "6".equals(subChoice);
+        }
+        if ("3".equals(mainChoice)) {
+            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice) || "5".equals(subChoice) || "6".equals(subChoice);
+        }
+        if ("4".equals(mainChoice)) {
+            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice);
+        }
+        return true;
+    }
+
+    private SymptomCategory getCategoryFromChoice(String choice) {
+        switch (choice) {
+            case "1": return SymptomCategory.CHORO_PERSISTENTE;
+            case "2": return SymptomCategory.BORBULHAS_ERUPCOES;
+            case "3": return SymptomCategory.FEBRE;
+            case "4": return SymptomCategory.DIARREIA_VOMITOS;
+            case "5": return SymptomCategory.DIFICULDADE_MAMAR;
+            default: return SymptomCategory.OUTRO;
+        }
+    }
+
+    private boolean isValidDetailChoice(SymptomCategory category, String choice) {
+        if (choice == null) return false;
+        String c = choice.trim();
+        switch (category) {
+            case CHORO_PERSISTENTE:
+            case BORBULHAS_ERUPCOES:
+                return "1".equals(c) || "2".equals(c) || "3".equals(c) || "4".equals(c);
+            case FEBRE:
+            case DIARREIA_VOMITOS:
+            case DIFICULDADE_MAMAR:
+            default:
+                return "1".equals(c) || "2".equals(c) || "3".equals(c);
+        }
     }
 
     private String buildMainMenu(Mother mother) {
@@ -259,7 +328,7 @@ public class UssdSessionService {
                 String healthCenter = vaccinationService.getNearestHealthCenter(mother.getProvince());
                 return "CON " + healthCenter + "\n0. Voltar ao menu principal";
             default:
-                return "CON Opção inválida.\n0. Voltar ao menu principal";
+                return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby);
         }
     }
 
@@ -290,7 +359,7 @@ public class UssdSessionService {
             case "4": category = SymptomCategory.DIARREIA_VOMITOS; break;
             case "5": category = SymptomCategory.DIFICULDADE_MAMAR; break;
             case "6": category = SymptomCategory.OUTRO; break;
-            default: return "CON Opção inválida.\n0. Voltar ao menu principal";
+            default: return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleTriageMenu(new String[]{"2"}, mother, baby);
         }
 
         if (parts.length == 2) {
@@ -301,6 +370,10 @@ public class UssdSessionService {
         }
 
         String detailInput = parts[2];
+        if (!"6".equals(symptomChoice) && !isValidDetailChoice(category, detailInput)) {
+            return "CON ⚠️ Opção inválida. Por favor escolha um dos números abaixo:\n\n" + buildSymptomDetailPrompt(category);
+        }
+
         String detailLabel = "6".equals(symptomChoice) ? detailInput : getDetailLabel(category, detailInput);
 
         // Perform AI Triage via DeepSeek / Fallback
@@ -426,7 +499,7 @@ public class UssdSessionService {
             case "4": cat = "ESTIMULACAO"; break;
             case "5": cat = "SAUDE_MENTAL"; break;
             case "6": cat = "NUTRICAO"; break;
-            default: return "CON Opção inválida.\n0. Voltar ao menu principal";
+            default: return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleWeeklyTipsMenu(new String[]{"3"}, mother, baby);
         }
 
         Optional<WeeklyTip> tipOpt = weeklyTipRepository.findByCategory(cat).stream().findFirst();
@@ -478,6 +551,7 @@ public class UssdSessionService {
             if ("1".equals(choice)) return "CON Digite o seu Nome Completo (ex: Maria Silva):";
             if ("2".equals(choice)) return buildProvincePrompt();
             if ("3".equals(choice)) return "CON Quantos meses tem o seu bebé? (ex: 0, 2, 4, 6):";
+            return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
         }
 
         if (parts.length >= 3) {
@@ -486,27 +560,34 @@ public class UssdSessionService {
                 motherService.updateMotherName(mother, val);
                 return "CON Nome atualizado com sucesso para " + val + "!\n\n0. Voltar ao menu principal";
             } else if ("2".equals(choice)) {
-                String prov = val;
+                String prov = null;
                 try {
                     int idx = Integer.parseInt(val.trim());
                     if (idx >= 1 && idx <= ANGOLA_PROVINCES.length) {
                         prov = ANGOLA_PROVINCES[idx - 1];
                     }
                 } catch (NumberFormatException ignored) {}
+                if (prov == null) {
+                    return "CON ⚠️ Província inválida. Por favor escolha um número de 1 a 18:\n\n" + buildProvincePrompt();
+                }
                 motherService.updateProvince(mother, prov);
                 return "CON Província atualizada para " + prov + "!\n\n0. Voltar ao menu principal";
             } else if ("3".equals(choice)) {
                 try {
                     int age = Integer.parseInt(val.trim());
+                    if (age < 0 || age > 60) {
+                        return "CON ⚠️ Idade inválida. Digite um número de meses entre 0 e 60:\n\nQuantos meses tem o seu bebé? (ex: 0, 2, 4, 6):";
+                    }
                     motherService.updateBabyAge(mother, age);
                     return "CON Idade do bebé atualizada para " + age + " meses!\n\n0. Voltar ao menu principal";
                 } catch (Exception e) {
-                    return "CON Formato de idade inválido.\n\n0. Voltar ao menu principal";
+                    return "CON ⚠️ Idade inválida. Digite apenas o número de meses (ex: 2, 4, 6):\n\nQuantos meses tem o seu bebé?:";
                 }
             }
         }
 
-        return "CON Opção inválida.\n0. Voltar ao menu principal";
+        return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
     }
+}
 }
 
