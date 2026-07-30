@@ -36,23 +36,23 @@ public class VaccinationService {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("💉 Próximas vacinas do(a) ").append(baby.getFullName()).append(":\n");
+        sb.append("Próximas vacinas do(a) ").append(baby.getFullName()).append(":\n");
 
         int count = 0;
         for (VaccinationRecord rec : records) {
-            if (count >= 4) break; // Limit for USSD screen size
+            if (count >= 4) break; // Limit for screen size
 
             LocalDate today = LocalDate.now();
             long days = ChronoUnit.DAYS.between(today, rec.getScheduledDate());
 
             if (rec.getStatus() == VaccineStatus.COMPLETED) {
-                sb.append("✅ ").append(rec.getVaccine().getName()).append(" - Realizada\n");
+                sb.append("[Concluída] ").append(rec.getVaccine().getName()).append("\n");
             } else if (days < 0) {
-                sb.append("🔴 ").append(rec.getVaccine().getName()).append(" (atraso de ").append(Math.abs(days)).append(" dias)\n");
+                sb.append("[Atraso] ").append(rec.getVaccine().getName()).append(" (atraso de ").append(Math.abs(days)).append(" dias)\n");
             } else if (days == 0) {
-                sb.append("⏰ ").append(rec.getVaccine().getName()).append(" - Hoje!\n");
+                sb.append("[Hoje] ").append(rec.getVaccine().getName()).append(" - Hoje!\n");
             } else {
-                sb.append("⏳ ").append(rec.getVaccine().getName()).append(" - ")
+                sb.append("[Pendente] ").append(rec.getVaccine().getName()).append(" - ")
                   .append(rec.getScheduledDate().toString())
                   .append(" (em ").append(days).append(" dias)\n");
             }
@@ -64,45 +64,45 @@ public class VaccinationService {
 
     public String formatFullNationalCalendar() {
         return """
-               📅 CALENDÁRIO NACIONAL DE VACINAÇÃO (MINSA 2018):
+               CALENDÁRIO NACIONAL DE VACINAÇÃO (MINSA 2018):
                ===========================================
-               👶 AO NASCER:
+               AO NASCER:
                - Pólio (Dose 0): Oral (2 gotas)
                - BCG (Única): Intra-Dérmica, Braço Esquerdo (0,05 ml)
                - Hepatite B (Única): Intra-Muscular, Coxa Esquerda (0,5 ml)
 
-               👶 2 MESES:
+               2 MESES:
                - Pólio (1ª dose): Oral (2 gotas)
                - Rotavírus (1ª dose): Oral Sublingual (Todo tubo)
                - Pneumococo (1ª dose): Intra-Muscular, Coxa Direita (0,5 ml)
                - Pentavalente (1ª dose): Intra-Muscular, Coxa Esquerda (0,5 ml)
 
-               👶 4 MESES:
+               4 MESES:
                - Pólio (2ª dose): Oral (2 gotas)
                - Rotavírus (2ª dose): Oral Sublingual (Todo tubo)
                - Pólio Inativada (Única): Intra-Muscular, Coxa Direita (0,5 ml)
                - Pneumococo (2ª dose): Intra-Muscular, Coxa Direita (0,5 ml)
                - Pentavalente (2ª dose): Intra-Muscular, Coxa Esquerda (0,5 ml)
 
-               👶 6 MESES:
+               6 MESES:
                - Pólio (3ª dose): Oral (2 gotas)
                - Vitamina A (1ª dose): Oral (3 gotas)
                - Pneumococo (3ª dose): Intra-Muscular, Coxa Direita (0,5 ml)
                - Pentavalente (3ª dose): Intra-Muscular, Coxa Esquerda (0,5 ml)
 
-               👶 9 MESES:
+               9 MESES:
                - Vitamina A (2ª dose): Oral (3 gotas)
                - Sarampo/Rubéola (1ª dose): Sub-Cutânea, Braço Esquerdo (0,5 ml)
                - Febre Amarela (Única): Sub-Cutânea, Braço Direito (0,5 ml)
 
-               👶 15 MESES:
+               15 MESES:
                - Sarampo/Rubéola (2ª dose/reforço): Sub-Cutânea, Braço Esquerdo (0,5 ml)
                """;
     }
 
     public String formatVaccineDetailMenu() {
         return """
-               📋 CONHEÇA AS VACINAS
+               CONHEÇA AS VACINAS
                =====================
                1. BCG
                2. Pólio
@@ -123,7 +123,7 @@ public class VaccinationService {
             case "1":
             case "BCG":
                 return """
-                       🔬 BCG
+                       BCG
 
                        Protege contra: Tuberculose
 
@@ -131,7 +131,7 @@ public class VaccinationService {
 
                        Transmissão: Pelo ar, através de tosse, espirro ou fala.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - Dose: Única
                        - Via: Intra-Dérmica
                        - Local: Braço Esquerdo (músculo deltoide)
@@ -142,7 +142,7 @@ public class VaccinationService {
             case "PÓLIO":
             case "POLIO":
                 return """
-                       🔬 PÓLIO (POLIOMIELITE)
+                       PÓLIO (POLIOMIELITE)
 
                        Protege contra: Pólio
 
@@ -150,7 +150,7 @@ public class VaccinationService {
 
                        Transmissão: Contacto com fezes ou secreções respiratórias de pessoas infectadas.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - 4 doses: ao nascer, aos 2, 4 e 6 meses
                        - Cada dose: 2 gotas (via oral)
                        - Dose única de Pólio Inativada: aos 4 meses (via Intra-Muscular)
@@ -163,7 +163,7 @@ public class VaccinationService {
             case "HEPATITE B":
             case "HEPATITE_B":
                 return """
-                       🔬 HEPATITE B
+                       HEPATITE B
 
                        Protege contra: Hepatite B
 
@@ -171,7 +171,7 @@ public class VaccinationService {
 
                        Transmissão: Sangue, fluidos corporais e de mãe para filho no parto.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - Dose: Única
                        - Via: Intra-Muscular
                        - Local: Face ânterolateral da coxa esquerda
@@ -181,40 +181,40 @@ public class VaccinationService {
             case "4":
             case "PENTAVALENTE":
                 return """
-                       🔬 PENTAVALENTE
+                       PENTAVALENTE
 
                        Protege contra 5 doenças graves:
 
-                       1️⃣ DIFTERIA:
+                       1. DIFTERIA:
                        Causada por toxina que atinge amígdalas e faringe. Pode obstruir a garganta e levar à morte.
 
-                       2️⃣ TÉTANO:
+                       2. TÉTANO:
                        Infecção que entra por ferimentos na pele ou pelo coto umbilical. Afecta o sistema nervoso e pode matar.
 
-                       3️⃣ TOSSE CONVULSA:
+                       3. TOSSE CONVULSA:
                        Doença infecciosa que atinge o aparelho respiratório. Em crianças <6 meses, pode ser grave e fatal.
 
-                       4️⃣ HAEMOPHILUS INFLUENZAE B:
+                       4. HAEMOPHILUS INFLUENZAE B:
                        Bactéria que causa meningite, sinusite e pneumonia.
 
-                       5️⃣ HEPATITE B:
+                       5. HEPATITE B:
                        Vírus contagioso que causa icterícia, cirrose e cancro de fígado.
 
-                       💉 VACINAÇÃO:
+                       VACINAÇÃO:
                        - 3 doses: 2, 4 e 6 meses
                        - Via: Intra-Muscular
                        - Local: Terço médio da face externa da coxa (direita/alternada)
                        - Dosagem: 0,5 ml
 
-                       ✅ Todas as vacinas são GRATUITAS!
-                       💪 Proteja o seu bebé!""";
+                       Todas as vacinas são GRATUITAS!
+                       Proteja o seu bebé!""";
 
             case "5":
             case "PNEUMOCOCUS":
             case "PNEUMOCOCO":
             case "PNEUMO":
                 return """
-                       🔬 PNEUMOCOCUS (PNEUMO)
+                       PNEUMOCOCUS (PNEUMO)
 
                        Protege contra: Doenças causadas pela bactéria Streptococcus pneumoniae (pneumococo)
 
@@ -222,7 +222,7 @@ public class VaccinationService {
 
                        Transmissão: Gotículas expelidas ao tossir, espirrar ou falar.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - 3 doses: aos 2, 4 e 6 meses
                        - Via: Intra-Muscular
                        - Local: Terço médio da face externa da coxa direita
@@ -232,7 +232,7 @@ public class VaccinationService {
             case "ROTAVÍRUS":
             case "ROTAVIRUS":
                 return """
-                       🔬 ROTAVÍRUS
+                       ROTAVÍRUS
 
                        Protege contra: Rotavírus
 
@@ -240,7 +240,7 @@ public class VaccinationService {
 
                        Transmissão: Via fecal-oral (mão-boca, água ou alimentos contaminados).
 
-                       💉 Vacinação:
+                       Vacinação:
                        - 2 doses:
                          1ª dose: dos 2 meses a menores de 4 meses de idade
                          2ª dose: dos 4 meses a menores de 7 meses de idade
@@ -248,7 +248,7 @@ public class VaccinationService {
                        - Local: Sublingual
                        - Dosagem: Todo tubo
 
-                       ⚠️ IMPORTANTE: Se uma criança estiver atrasada para vacinação, ela não pode iniciar a vacinação contra o rotavírus depois de 4 meses de idade. A segunda dose não pode ser administrada depois de 7 meses de idade.""";
+                       IMPORTANTE: Se uma criança estiver atrasada para vacinação, ela não pode iniciar a vacinação contra o rotavírus depois de 4 meses de idade. A segunda dose não pode ser administrada depois de 7 meses de idade.""";
 
             case "7":
             case "SARAMPO/RUBÉOLA":
@@ -256,7 +256,7 @@ public class VaccinationService {
             case "SARAMPO E RUBÉOLA":
             case "SARAMPO":
                 return """
-                       🔬 SARAMPO E RUBÉOLA
+                       SARAMPO E RUBÉOLA
 
                        Protege contra: Sarampo e Rubéola
 
@@ -266,7 +266,7 @@ public class VaccinationService {
 
                        Prevenção: A única forma de evitar o Sarampo e a Rubéola é através da vacinação.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - 2 doses:
                          1ª dose: aos 9 meses
                          2ª dose (reforço): aos 15 meses
@@ -278,13 +278,13 @@ public class VaccinationService {
             case "FEBRE AMARELA":
             case "FEBRE_AMARELA":
                 return """
-                       🔬 FEBRE AMARELA
+                       FEBRE AMARELA
 
                        Protege contra: Febre Amarela
 
                        Doença: É uma febre hemorrágica causada por um vírus. Transmitida de pessoa para pessoa pela picada do mosquito Aedes aegypti infectado.
 
-                       💉 Vacinação:
+                       Vacinação:
                        - Dose: Única
                        - Via: Sub-Cutânea
                        - Local: Região deltóide do braço direito
@@ -331,44 +331,43 @@ public class VaccinationService {
     public String getNearestHealthCenter(String province) {
         String provUpper = province != null ? province.toUpperCase() : "HUAMBO";
         if (provUpper.contains("BENGO") && !provUpper.contains("BENGUELA")) {
-            return "🏥 Unidades no Bengo:\n- Hospital Geral do Bengo (Caxito)\n- Centro de Saúde de Mabubas";
+            return "Unidades no Bengo:\n- Hospital Geral do Bengo (Caxito)\n- Centro de Saúde de Mabubas";
         } else if (provUpper.contains("BENGUELA")) {
-            return "🏥 Unidades em Benguela:\n- Hospital Geral do Lobito\n- Centro de Saúde da Catumbela\n- Maternidade de Benguela";
+            return "Unidades em Benguela:\n- Hospital Geral do Lobito\n- Centro de Saúde da Catumbela\n- Maternidade de Benguela";
         } else if (provUpper.contains("BIE")) {
-            return "🏥 Unidades no Bié:\n- Hospital Regional do Kuito\n- Centro de Saúde de Camacupa";
+            return "Unidades no Bié:\n- Hospital Regional do Kuito\n- Centro de Saúde de Camacupa";
         } else if (provUpper.contains("CABINDA")) {
-            return "🏥 Unidades em Cabinda:\n- Hospital Geral de Cabinda\n- Centro Materno-Infantil de Cabinda";
+            return "Unidades em Cabinda:\n- Hospital Geral de Cabinda\n- Centro Materno-Infantil de Cabinda";
         } else if (provUpper.contains("CUANDO")) {
-            return "🏥 Unidades no Quando Cubango:\n- Hospital Geral de Menongue\n- Centro de Saúde de Calai";
+            return "Unidades no Quando Cubango:\n- Hospital Geral de Menongue\n- Centro de Saúde de Calai";
         } else if (provUpper.contains("CUANZA NORTE") || provUpper.contains("KWANZA NORTE")) {
-            return "🏥 Unidades no Cuanza Norte:\n- Hospital Provincial de Ndalatando\n- Centro Materno-Infantil do Cazengo";
+            return "Unidades no Cuanza Norte:\n- Hospital Provincial de Ndalatando\n- Centro Materno-Infantil do Cazengo";
         } else if (provUpper.contains("CUANZA SUL") || provUpper.contains("KWANZA SUL")) {
-            return "🏥 Unidades no Cuanza Sul:\n- Hospital Geral do Sumbe\n- Centro de Saúde de Porto Amboim";
+            return "Unidades no Cuanza Sul:\n- Hospital Geral do Sumbe\n- Centro de Saúde de Porto Amboim";
         } else if (provUpper.contains("CUNENE")) {
-            return "🏥 Unidades no Cunene:\n- Hospital Geral de Ondjiva\n- Centro de Saúde de Namacunde";
+            return "Unidades no Cunene:\n- Hospital Geral de Ondjiva\n- Centro de Saúde de Namacunde";
         } else if (provUpper.contains("HUAMBO")) {
-            return "🏥 Unidades no Huambo:\n- Centro Materno-Infantil da Caála\n- Hospital Geral do Huambo\n- Posto de Saúde de Sanzo";
+            return "Unidades no Huambo:\n- Centro Materno-Infantil da Caála\n- Hospital Geral do Huambo\n- Posto de Saúde de Sanzo";
         } else if (provUpper.contains("HUILA")) {
-            return "🏥 Unidades na Huíla:\n- Hospital Central do Lubango\n- Centro Materno-Infantil da Humpata";
+            return "Unidades na Huíla:\n- Hospital Central do Lubango\n- Centro Materno-Infantil da Humpata";
         } else if (provUpper.contains("LUANDA")) {
-            return "🏥 Unidades em Luanda:\n- Maternidade Lucrécia Paim\n- Hospital Materno-Infantil Azancot de Menezes\n- Hospital Geral de Luanda";
+            return "Unidades em Luanda:\n- Maternidade Lucrécia Paim\n- Hospital Materno-Infantil Azancot de Menezes\n- Hospital Geral de Luanda";
         } else if (provUpper.contains("LUNDA NORTE")) {
-            return "🏥 Unidades na Lunda Norte:\n- Hospital Geral de Dundo\n- Centro de Saúde de Chitato";
+            return "Unidades na Lunda Norte:\n- Hospital Geral de Dundo\n- Centro de Saúde de Chitato";
         } else if (provUpper.contains("LUNDA SUL")) {
-            return "🏥 Unidades na Lunda Sul:\n- Hospital Geral de Saurimo\n- Centro Materno-Infantil de Saurimo";
+            return "Unidades na Lunda Sul:\n- Hospital Geral de Saurimo\n- Centro Materno-Infantil de Saurimo";
         } else if (provUpper.contains("MALANJE")) {
-            return "🏥 Unidades em Malanje:\n- Hospital Regional de Malanje\n- Centro de Saúde de Cangandala";
+            return "Unidades em Malanje:\n- Hospital Regional de Malanje\n- Centro de Saúde de Cangandala";
         } else if (provUpper.contains("MOXICO")) {
-            return "🏥 Unidades no Moxico:\n- Hospital Geral de Luena\n- Centro de Saúde de Camanongue";
+            return "Unidades no Moxico:\n- Hospital Geral de Luena\n- Centro de Saúde de Camanongue";
         } else if (provUpper.contains("NAMIBE")) {
-            return "🏥 Unidades no Namibe:\n- Hospital Geral de Moçâmedes\n- Centro Materno-Infantil de Moçâmedes";
+            return "Unidades no Namibe:\n- Hospital Geral de Moçâmedes\n- Centro Materno-Infantil de Moçâmedes";
         } else if (provUpper.contains("UIGE")) {
-            return "🏥 Unidades no Uíge:\n- Hospital Geral do Uíge\n- Centro Materno-Infantil do Uíge";
+            return "Unidades no Uíge:\n- Hospital Geral do Uíge\n- Centro Materno-Infantil do Uíge";
         } else if (provUpper.contains("ZAIRE")) {
-            return "🏥 Unidades no Zaire:\n- Hospital Provincial de Mbanza Kongo\n- Centro de Saúde de Soyo";
+            return "Unidades no Zaire:\n- Hospital Provincial de Mbanza Kongo\n- Centro de Saúde de Soyo";
         } else {
-            return "🏥 Procure a Maternidade ou Centro de Saúde mais próximo da sua comuna ou município.";
+            return "Procure a Maternidade ou Centro de Saúde mais próximo da sua comuna ou município.";
         }
     }
 }
-

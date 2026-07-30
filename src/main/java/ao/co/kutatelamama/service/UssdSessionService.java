@@ -49,7 +49,6 @@ public class UssdSessionService {
     public static String stripAccentsAndEmojis(String input) {
         if (input == null || input.isEmpty()) return input;
 
-        // 1. Remove Emojis, símbolos Unicode e pares substitutos (surrogates)
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < input.length(); ) {
             int codePoint = input.codePointAt(i);
@@ -63,11 +62,9 @@ public class UssdSessionService {
         }
         String noEmojis = sb.toString();
 
-        // 2. Normalização NFD e remoção de marcas diacríticas (acentos)
         String normalized = Normalizer.normalize(noEmojis, Normalizer.Form.NFD);
         String noAccents = normalized.replaceAll("\\p{M}", "");
 
-        // 3. Substituições de caracteres especiais mantidos pela NFD
         noAccents = noAccents.replace("ç", "c")
                              .replace("Ç", "C")
                              .replace("º", "")
@@ -79,7 +76,6 @@ public class UssdSessionService {
                              .replace("‘", "'")
                              .replace("’", "'");
 
-        // 4. Limpeza de espaços duplicados mantendo a estrutura de quebras de linha
         String[] lines = noAccents.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
             lines[i] = lines[i].replaceAll("[ \t]+", " ").trim();
@@ -88,25 +84,28 @@ public class UssdSessionService {
     }
 
     private static boolean isEmojiOrSymbol(int codePoint) {
-        if (codePoint >= 0x1F300 && codePoint <= 0x1F9FF) return true; // Misc Symbols & Pictographs
-        if (codePoint >= 0x1F600 && codePoint <= 0x1F64F) return true; // Emoticons
-        if (codePoint >= 0x1F680 && codePoint <= 0x1F6FF) return true; // Transport & Map
-        if (codePoint >= 0x2600  && codePoint <= 0x27BF)  return true; // Misc Symbols & Dingbats
-        if (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF) return true; // Regional Indicator Flags
-        if (codePoint >= 0x1F900 && codePoint <= 0x1F9FF) return true; // Supplemental Symbols
-        if (codePoint >= 0x1FA70 && codePoint <= 0x1FAFF) return true; // Symbols Extended-A
-        if (codePoint == 0x200D || codePoint == 0xFE0F) return true;   // ZWJ / Variation Selector
+        if (codePoint >= 0x1F300 && codePoint <= 0x1F9FF) return true;
+        if (codePoint >= 0x1F600 && codePoint <= 0x1F64F) return true;
+        if (codePoint >= 0x1F680 && codePoint <= 0x1F6FF) return true;
+        if (codePoint >= 0x2600  && codePoint <= 0x27BF)  return true;
+        if (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF) return true;
+        if (codePoint >= 0x1F900 && codePoint <= 0x1F9FF) return true;
+        if (codePoint >= 0x1FA70 && codePoint <= 0x1FAFF) return true;
+        if (codePoint == 0x200D || codePoint == 0xFE0F) return true;
 
         int type = Character.getType(codePoint);
         return type == Character.OTHER_SYMBOL || type == Character.SURROGATE;
     }
 
     public String processUssdRequest(String sessionId, String serviceCode, String phoneNumber, String text) {
-        log.info("[USSD Request] sessionId: {}, serviceCode: {}, phone: {}, text: '{}'", sessionId, serviceCode, phoneNumber, text);
+        return processUssdRequest(sessionId, serviceCode, phoneNumber, text, false);
+    }
 
-        String[] parts = cleanAndReduceUssdPath(text);
+    public String processUssdRequest(String sessionId, String serviceCode, String phoneNumber, String text, boolean isWhatsApp) {
+        log.info("[USSD Request] sessionId: {}, serviceCode: {}, phone: {}, text: '{}', isWhatsApp: {}", sessionId, serviceCode, phoneNumber, text, isWhatsApp);
 
-        // Fetch or create default mother with normalized phone number
+        String[] parts = cleanAndReduceUssdPath(text, isWhatsApp);
+
         String cleanPhone = motherService.normalizePhoneNumber(phoneNumber);
         Mother mother = motherService.findByPhoneNumber(cleanPhone).orElseGet(() -> {
             return motherService.registerMotherAndBaby(cleanPhone, "Mãe " + cleanPhone.substring(Math.max(0, cleanPhone.length() - 4)), "Huambo", "Bebé", 2);
@@ -114,7 +113,6 @@ public class UssdSessionService {
 
         Baby baby = motherService.getOrCreateDefaultBabyForMother(mother);
 
-        // Root menu level
         if (parts.length == 0) {
             return buildMainMenu(mother);
         }
@@ -123,7 +121,7 @@ public class UssdSessionService {
 
         switch (mainChoice) {
             case "1":
-                return handleVaccinationMenu(parts, mother, baby);
+                return handleVaccinationMenu(parts, mother, baby, isWhatsApp);
             case "2":
                 return handleTriageMenu(parts, mother, baby);
             case "3":
@@ -131,18 +129,17 @@ public class UssdSessionService {
             case "4":
                 return handleRegistrationMenu(parts, mother, phoneNumber);
             case "5":
-                return "END 🟢 Obrigado por usar o Kutatela Mama.\nCuidar da mãe é cuidar do futuro!";
+                return "END Obrigado por usar o Kutatela Mama.\nCuidar da mãe é cuidar do futuro!";
             default:
-                return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + buildMainMenu(mother);
+                return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + buildMainMenu(mother);
         }
     }
 
-    /**
-     * Processa a sequência de entradas USSD acumuladas pelo Africa's Talking / WhatsApp (ex: "1*1*0*2"),
-     * decodificando caracteres como %2A (*), ignorando códigos de serviço e interpretando 
-     * '0' como recuar 1 nível e '00' como voltar ao menu principal.
-     */
     public String[] cleanAndReduceUssdPath(String text) {
+        return cleanAndReduceUssdPath(text, false);
+    }
+
+    public String[] cleanAndReduceUssdPath(String text, boolean isWhatsApp) {
         if (text == null || text.trim().isEmpty()) {
             return new String[0];
         }
@@ -161,32 +158,28 @@ public class UssdSessionService {
             String t = token.trim();
             if (t.isEmpty()) continue;
 
-            // Ignora o código de serviço caso venha incluído no texto (ex: 384, 23898, 123, 404)
             if (stack.isEmpty() && (t.contains("384") || t.contains("23898") || t.contains("123") || t.contains("404"))) {
                 continue;
             }
 
-            // Se a opção principal for inválida, limpa a pilha
             if (stack.size() == 1 && !isMainChoiceValid(stack.get(0))) {
                 stack.clear();
             }
 
-            // Se o sub-menu for inválido, limpa a escolha do sub-menu
-            if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1))) {
+            if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1), isWhatsApp)) {
                 stack.remove(1);
             }
 
-            // Se já esteve na tela de resultado da Triagem (pilha tamanho >= 3 na opção 2)
             if (stack.size() >= 3 && "2".equals(stack.get(0))) {
                 if (!"6".equals(stack.get(1)) && !isValidDetailChoice(getCategoryFromChoice(stack.get(1)), stack.get(2))) {
                     stack.remove(2);
                 } else if (stack.size() >= 3) {
                     if ("1".equals(t)) {
                         stack.clear();
-                        stack.add("2"); // Volta ao menu de Triagem
+                        stack.add("2");
                         continue;
                     } else if ("0".equals(t) || "00".equals(t)) {
-                        stack.clear(); // Volta ao menu principal
+                        stack.clear();
                         continue;
                     } else {
                         stack.clear();
@@ -195,21 +188,17 @@ public class UssdSessionService {
                 }
             }
 
-            // Se já estiver na tela de confirmação de Registar/Atualizar Dados (pilha tamanho >= 3 na opção 4)
             if (stack.size() >= 3 && "4".equals(stack.get(0))) {
                 if ("0".equals(t) || "00".equals(t)) {
-                    stack.clear(); // Volta ao menu principal
+                    stack.clear();
                     continue;
                 } else {
                     stack.clear();
-                    stack.add("4"); // Volta ao menu de registo
+                    stack.add("4");
                 }
             }
 
-            // Em Vacinação (1) e Dicas (3), verifica se o estado atual é uma folha (ex: 1*1, 1*2, 1*4, 1*3*1, 3*1)
-            boolean isLeafScreenState = isLeafScreenState(stack);
-
-            // Verifica se está na fase de introdução de dados livres (opção 4 ou opção 2->6 texto livre)
+            boolean isLeafScreenState = isLeafScreenState(stack, isWhatsApp);
             boolean isDataInputState = (stack.size() == 2 && ("4".equals(stack.get(0)) || ("2".equals(stack.get(0)) && "6".equals(stack.get(1)))));
 
             if ("00".equals(t)) {
@@ -235,10 +224,9 @@ public class UssdSessionService {
             }
         }
 
-        // Limpeza final do topo da pilha caso o último elemento seja um item numérico inválido
         if (stack.size() == 1 && !isMainChoiceValid(stack.get(0))) {
             stack.clear();
-        } else if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1))) {
+        } else if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1), isWhatsApp)) {
             stack.remove(1);
         } else if (stack.size() >= 3 && "1".equals(stack.get(0)) && "3".equals(stack.get(1))) {
             if (!isValidVaccineChoice(stack.get(2))) {
@@ -253,19 +241,26 @@ public class UssdSessionService {
         return stack.toArray(new String[0]);
     }
 
-    private boolean isLeafScreenState(java.util.List<String> stack) {
+    private boolean isLeafScreenState(java.util.List<String> stack, boolean isWhatsApp) {
         if (stack.size() < 2) return false;
         String mainChoice = stack.get(0);
         String subChoice = stack.get(1);
 
         if ("1".equals(mainChoice)) {
-            if ("1".equals(subChoice) || "2".equals(subChoice) || "4".equals(subChoice)) {
-                return true;
+            if (isWhatsApp) {
+                if ("1".equals(subChoice) || "2".equals(subChoice) || "4".equals(subChoice)) {
+                    return true;
+                }
+                if ("3".equals(subChoice) && stack.size() >= 3) {
+                    return true;
+                }
+                return false;
+            } else {
+                if ("1".equals(subChoice) || "2".equals(subChoice)) {
+                    return true;
+                }
+                return false;
             }
-            if ("3".equals(subChoice) && stack.size() >= 3) {
-                return true;
-            }
-            return false;
         }
 
         if ("3".equals(mainChoice)) {
@@ -285,9 +280,13 @@ public class UssdSessionService {
         return "1".equals(choice) || "2".equals(choice) || "3".equals(choice) || "4".equals(choice) || "5".equals(choice);
     }
 
-    private boolean isSubChoiceValid(String mainChoice, String subChoice) {
+    private boolean isSubChoiceValid(String mainChoice, String subChoice, boolean isWhatsApp) {
         if ("1".equals(mainChoice)) {
-            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice);
+            if (isWhatsApp) {
+                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice);
+            } else {
+                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice);
+            }
         }
         if ("2".equals(mainChoice)) {
             return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice) || "5".equals(subChoice) || "6".equals(subChoice);
@@ -339,15 +338,24 @@ public class UssdSessionService {
                "5. Sair";
     }
 
-    private String handleVaccinationMenu(String[] parts, Mother mother, Baby baby) {
+    private String handleVaccinationMenu(String[] parts, Mother mother, Baby baby, boolean isWhatsApp) {
         if (parts.length == 1) {
-            return "CON Calendário de Vacinação\n" +
-                   "================================\n" +
-                   "1. Ver próximas vacinas do bebé\n" +
-                   "2. Calendário completo nacional\n" +
-                   "3. Conheça as Vacinas\n" +
-                   "4. Unidade de saúde mais próxima\n" +
-                   "0. Voltar ao menu principal";
+            if (isWhatsApp) {
+                return "CON Calendário de Vacinação\n" +
+                       "================================\n" +
+                       "1. Ver próximas vacinas do bebé\n" +
+                       "2. Calendário completo nacional\n" +
+                       "3. Conheça as Vacinas\n" +
+                       "4. Unidade de saúde mais próxima\n" +
+                       "0. Voltar ao menu principal";
+            } else {
+                // No USSD são removidos os itens cujas respostas são muito texto (Calendário completo e Conheça as Vacinas)
+                return "CON Calendário de Vacinação\n" +
+                       "================================\n" +
+                       "1. Ver próximas vacinas do bebé\n" +
+                       "2. Unidade de saúde mais próxima\n" +
+                       "0. Voltar ao menu principal";
+            }
         }
 
         String choice = parts[1];
@@ -355,19 +363,33 @@ public class UssdSessionService {
             return buildMainMenu(mother);
         }
 
-        switch (choice) {
-            case "1":
-                String upcoming = vaccinationService.formatUpcomingVaccinesForBaby(baby);
-                return "CON " + upcoming + "\n0. Voltar ao menu principal";
-            case "2":
-                String calendar = vaccinationService.formatFullNationalCalendar();
-                return "CON " + calendar + "\n0. Voltar ao menu principal";
-            case "3":
-                return handleKnowVaccinesSubmenu(parts, mother);
-            case "4":
-                return "CON 📍 Mãe, para encontrarmos o posto de vacinação mais próximo de si, clique no ícone de Clipe (Anexo) ou mais (+) aqui no seu WhatsApp, selecione 'Localização' e envie a sua 'Localização atual'.";
-            default:
-                return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby);
+        if (isWhatsApp) {
+            switch (choice) {
+                case "1":
+                    String upcoming = vaccinationService.formatUpcomingVaccinesForBaby(baby);
+                    return "CON " + upcoming + "\n0. Voltar ao menu principal";
+                case "2":
+                    String calendar = vaccinationService.formatFullNationalCalendar();
+                    return "CON " + calendar + "\n0. Voltar ao menu principal";
+                case "3":
+                    return handleKnowVaccinesSubmenu(parts, mother);
+                case "4":
+                    return "CON Mãe, para encontrarmos o posto de vacinação mais próximo de si, clique no ícone de Clipe (Anexo) ou mais (+) aqui no seu WhatsApp, selecione 'Localização' e envie a sua 'Localização atual'.";
+                default:
+                    return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby, isWhatsApp);
+            }
+        } else {
+            // USSD Mode
+            switch (choice) {
+                case "1":
+                    String upcoming = vaccinationService.formatUpcomingVaccinesForBaby(baby);
+                    return "CON " + upcoming + "\n0. Voltar ao menu principal";
+                case "2":
+                    String healthCenter = vaccinationService.getNearestHealthCenter(mother.getProvince());
+                    return "CON " + healthCenter + "\n\n0. Voltar ao menu principal";
+                default:
+                    return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby, isWhatsApp);
+            }
         }
     }
 
@@ -378,7 +400,7 @@ public class UssdSessionService {
 
         String vaccineChoice = parts[2];
         if ("0".equals(vaccineChoice)) {
-            return handleVaccinationMenu(new String[]{"1"}, mother, null);
+            return handleVaccinationMenu(new String[]{"1"}, mother, null, true);
         }
 
         String detail = vaccinationService.formatVaccineDetail(vaccineChoice);
@@ -386,7 +408,7 @@ public class UssdSessionService {
             return "CON " + detail + "\n\nDigite 0 para voltar";
         }
 
-        return "CON ⚠️ Opção inválida. Por favor escolha um número de 1 a 8:\n\n" + vaccinationService.formatVaccineDetailMenu();
+        return "CON Opção inválida. Por favor escolha um número de 1 a 8:\n\n" + vaccinationService.formatVaccineDetailMenu();
     }
 
     private String handleTriageMenu(String[] parts, Mother mother, Baby baby) {
@@ -416,7 +438,7 @@ public class UssdSessionService {
             case "4": category = SymptomCategory.DIARREIA_VOMITOS; break;
             case "5": category = SymptomCategory.DIFICULDADE_MAMAR; break;
             case "6": category = SymptomCategory.OUTRO; break;
-            default: return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleTriageMenu(new String[]{"2"}, mother, baby);
+            default: return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleTriageMenu(new String[]{"2"}, mother, baby);
         }
 
         if (parts.length == 2) {
@@ -428,12 +450,11 @@ public class UssdSessionService {
 
         String detailInput = parts[2];
         if (!"6".equals(symptomChoice) && !isValidDetailChoice(category, detailInput)) {
-            return "CON ⚠️ Opção inválida. Por favor escolha um dos números abaixo:\n\n" + buildSymptomDetailPrompt(category);
+            return "CON Opção inválida. Por favor escolha um dos números abaixo:\n\n" + buildSymptomDetailPrompt(category);
         }
 
         String detailLabel = "6".equals(symptomChoice) ? detailInput : getDetailLabel(category, detailInput);
 
-        // Perform AI Triage via DeepSeek / Fallback
         TriageRecord record = triageAiService.performTriage(mother, baby, category, detailLabel);
 
         return formatTriageResponse(record);
@@ -556,7 +577,7 @@ public class UssdSessionService {
             case "4": cat = "ESTIMULACAO"; break;
             case "5": cat = "SAUDE_MENTAL"; break;
             case "6": cat = "NUTRICAO"; break;
-            default: return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleWeeklyTipsMenu(new String[]{"3"}, mother, baby);
+            default: return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleWeeklyTipsMenu(new String[]{"3"}, mother, baby);
         }
 
         Optional<WeeklyTip> tipOpt = weeklyTipRepository.findByCategory(cat).stream().findFirst();
@@ -608,7 +629,7 @@ public class UssdSessionService {
             if ("1".equals(choice)) return "CON Digite o seu Nome Completo (ex: Maria Silva):";
             if ("2".equals(choice)) return buildProvincePrompt();
             if ("3".equals(choice)) return "CON Quantos meses tem o seu bebé? (ex: 0, 2, 4, 6):";
-            return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
+            return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
         }
 
         if (parts.length >= 3) {
@@ -625,7 +646,7 @@ public class UssdSessionService {
                     }
                 } catch (NumberFormatException ignored) {}
                 if (prov == null) {
-                    return "CON ⚠️ Província inválida. Por favor escolha um número de 1 a 18:\n\n" + buildProvincePrompt();
+                    return "CON Província inválida. Por favor escolha um número de 1 a 18:\n\n" + buildProvincePrompt();
                 }
                 motherService.updateProvince(mother, prov);
                 return "CON Província atualizada para " + prov + "!\n\n0. Voltar ao menu principal";
@@ -633,17 +654,16 @@ public class UssdSessionService {
                 try {
                     int age = Integer.parseInt(val.trim());
                     if (age < 0 || age > 60) {
-                        return "CON ⚠️ Idade inválida. Digite um número de meses entre 0 e 60:\n\nQuantos meses tem o seu bebé? (ex: 0, 2, 4, 6):";
+                        return "CON Idade inválida. Digite um número de meses entre 0 e 60:\n\nQuantos meses tem o seu bebé? (ex: 0, 2, 4, 6):";
                     }
                     motherService.updateBabyAge(mother, age);
                     return "CON Idade do bebé atualizada para " + age + " meses!\n\n0. Voltar ao menu principal";
                 } catch (Exception e) {
-                    return "CON ⚠️ Idade inválida. Digite apenas o número de meses (ex: 2, 4, 6):\n\nQuantos meses tem o seu bebé?:";
+                    return "CON Idade inválida. Digite apenas o número de meses (ex: 2, 4, 6):\n\nQuantos meses tem o seu bebé?:";
                 }
             }
         }
 
-        return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
+        return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
     }
 }
-

@@ -26,6 +26,11 @@ spring:
       hibernate:
         format_sql: true
 
+deepseek:
+  api:
+    key: ${DEEPSEEK_API_KEY:mock_key}
+    url: ${DEEPSEEK_URL:https://api.deepseek.com/v1/chat/completions}
+
 kutatela:
   africastalking:
     username: ${AFRICASTALKING_USERNAME:sandbox}
@@ -42,6 +47,3 @@ kutatela:
     api-url: ${GOWA_API_URL:https://go-whatsapp-web-multidevice-production-4328.up.railway.app}
     device-id: ${GOWA_DEVICE_ID:kutatela_mama}
     enabled: ${GOWA_ENABLED:true}
-
-
-

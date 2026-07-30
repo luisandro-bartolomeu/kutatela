@@ -121,14 +121,14 @@ public class WhatsAppService {
             inputSequence = currentSessionText + "*" + receivedText;
         }
 
-        // Utiliza o redutor de stack do USSD
-        String[] cleanTokens = ussdSessionService.cleanAndReduceUssdPath(inputSequence);
+        // Utiliza o redutor de stack do USSD (isWhatsApp = true)
+        String[] cleanTokens = ussdSessionService.cleanAndReduceUssdPath(inputSequence, true);
         String reducedPath = String.join("*", cleanTokens);
 
         log.info("[MENU WHATSAPP] Numero: '{}' | Entrada: '{}' -> Estado Reduzido: '{}'", fromPhone, inputSequence, reducedPath);
 
-        // Executa o motor de menus USSD com a string de navegação corrigida
-        String rawMenuResponse = ussdSessionService.processUssdRequest(fromPhone, "*404#", fromPhone, reducedPath);
+        // Executa o motor de menus com a string de navegação corrigida (isWhatsApp = true)
+        String rawMenuResponse = ussdSessionService.processUssdRequest(fromPhone, "*404#", fromPhone, reducedPath, true);
 
         // Limpeza dos prefixos CON e END
         String finalWhatsAppMessage = rawMenuResponse;
