@@ -325,8 +325,7 @@ public class UssdSessionService {
                 String calendar = vaccinationService.formatFullNationalCalendar();
                 return "CON " + calendar + "\n0. Voltar ao menu principal";
             case "3":
-                String healthCenter = vaccinationService.getNearestHealthCenter(mother.getProvince());
-                return "CON " + healthCenter + "\n0. Voltar ao menu principal";
+                return "CON 📍 Mãe, para encontrarmos o posto de vacinação mais próximo de si, clique no ícone de Clipe (Anexo) ou mais (+) aqui no seu WhatsApp, selecione 'Localização' e envie a sua 'Localização atual'.";
             default:
                 return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby);
         }
@@ -588,6 +587,5 @@ public class UssdSessionService {
 
         return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleRegistrationMenu(new String[]{"4"}, mother, phone);
     }
-}
 }
 

@@ -7,6 +7,7 @@ import java.util.Map;
 public class WhatsAppWebhookPayloadDto {
 
     private String event;
+    private String type;
 
     @JsonProperty("session_id")
     private String deviceId;
@@ -38,6 +39,9 @@ public class WhatsAppWebhookPayloadDto {
     // Getters and Setters
     public String getEvent() { return event; }
     public void setEvent(String event) { this.event = event; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
@@ -124,5 +128,93 @@ public class WhatsAppWebhookPayloadDto {
 
         return null;
     }
-}
 
+    /**
+     * Verifica se a mensagem e do tipo localizacao ("location").
+     */
+    public boolean isLocationMessage() {
+        if ("location".equalsIgnoreCase(this.type)) {
+            return true;
+        }
+        if (payload != null) {
+            Object typeObj = payload.get("type");
+            if (typeObj != null && "location".equalsIgnoreCase(typeObj.toString().trim())) {
+                return true;
+            }
+            Object msgTypeObj = payload.get("message_type");
+            if (msgTypeObj != null && "location".equalsIgnoreCase(msgTypeObj.toString().trim())) {
+                return true;
+            }
+        }
+        return getLatitude() != null && getLongitude() != null;
+    }
+
+    /**
+     * Extrai a latitude do objeto da mensagem do GoWA com seguranca.
+     */
+    public Double getLatitude() {
+        return extractCoordinate("latitude", "degreesLatitude", "lat");
+    }
+
+    /**
+     * Extrai a longitude do objeto da mensagem do GoWA com seguranca.
+     */
+    public Double getLongitude() {
+        return extractCoordinate("longitude", "degreesLongitude", "lng", "lon", "long");
+    }
+
+    private Double extractCoordinate(String... targetKeys) {
+        if (payload == null) return null;
+
+        // 1. Procura diretamente no payload
+        for (String key : targetKeys) {
+            if (payload.containsKey(key)) {
+                Double val = parseCoordinate(payload.get(key));
+                if (val != null) return val;
+            }
+        }
+
+        // 2. Procura em sub-objetos comuns do GoWA (location, locationMessage, message)
+        String[] subMapKeys = {"location", "locationMessage", "message"};
+        for (String subKey : subMapKeys) {
+            Object sub = payload.get(subKey);
+            if (sub instanceof Map) {
+                Map<?, ?> map = (Map<?, ?>) sub;
+                for (String key : targetKeys) {
+                    if (map.containsKey(key)) {
+                        Double val = parseCoordinate(map.get(key));
+                        if (val != null) return val;
+                    }
+                }
+                // Procura um nivel mais fundo se 'message' contiver 'locationMessage' ou 'location'
+                if ("message".equals(subKey)) {
+                    Object nestedLoc = map.get("locationMessage");
+                    if (nestedLoc == null) nestedLoc = map.get("location");
+                    if (nestedLoc instanceof Map) {
+                        Map<?, ?> nestedMap = (Map<?, ?>) nestedLoc;
+                        for (String key : targetKeys) {
+                            if (nestedMap.containsKey(key)) {
+                                Double val = parseCoordinate(nestedMap.get(key));
+                                if (val != null) return val;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Double parseCoordinate(Object val) {
+        if (val == null) return null;
+        if (val instanceof Number) {
+            return ((Number) val).doubleValue();
+        }
+        try {
+            return Double.parseDouble(val.toString().trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+}
