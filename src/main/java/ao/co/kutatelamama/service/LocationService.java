@@ -53,12 +53,11 @@ public class LocationService {
             List<HealthCenterItem> centers = buscarHospitaisProximos(userLat, userLon);
 
             if (centers.isEmpty()) {
-                return "📍 Mãe, não encontramos postos ou clínicas de saúde num raio de 15km da sua localização atual.\n\n" +
-                       "Recomendamos dirigir-se à unidade de saúde mais próxima do seu município ou contactar os serviços locais.";
+                return "Não encontramos hospitais ou maternidades cadastrados no mapa num raio de 7km da sua localização atual.";
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("📍 *Unidades de Saúde Mais Próximas de Si:*\n\n");
+            sb.append("*Unidades de Saúde Mais Próximas de Si:*\n\n");
 
             int limit = Math.min(3, centers.size());
             for (int i = 0; i < limit; i++) {
@@ -66,42 +65,43 @@ public class LocationService {
                 String googleMapsUrl = String.format(Locale.US, "https://www.google.com/maps/dir/?api=1&destination=%.6f,%.6f", item.getLat(), item.getLon());
 
                 sb.append(i + 1).append(". *").append(item.getName()).append("*\n")
-                  .append("   📏 Distância: ~").append(String.format(Locale.US, "%.1f", item.getDistanceKm())).append(" km\n")
-                  .append("   🧭 Rota no Google Maps: ").append(googleMapsUrl).append("\n\n");
+                  .append("   Distância: ~").append(String.format(Locale.US, "%.1f", item.getDistanceKm())).append(" km\n")
+                  .append("   Rota no Google Maps: ").append(googleMapsUrl).append("\n\n");
             }
 
-            sb.append("💡 *Dica:* Clique no link do Google Maps para iniciar a navegação até ao posto de vacinação.");
+            sb.append("*Dica:* Clique no link do Google Maps para iniciar a navegação até à unidade de saúde.");
             return sb.toString();
 
         } catch (Exception e) {
             log.error("Erro ao consultar Overpass API do OpenStreetMap para lat={}, lon={}: {}", userLat, userLon, e.getMessage(), e);
-            return "📍 Não foi possível obter as unidades de saúde em tempo real de momento.\n" +
-                   "Por favor, tente novamente mais tarde ou consulte o posto de saúde do seu município.";
+            return "Não foi possível obter as unidades de saúde em tempo real de momento.\n" +
+                   "Por favor, tente novamente mais tarde ou consulte a unidade de saúde do seu município.";
         }
     }
 
     /**
-     * Busca os hospitais, maternidades e clinicas mais proximos num raio expandido de 15km (15000m).
-     * Aplica busca tolerante por tags 'amenity' e regex por nome ('Hospital', 'Maternidade', 'Centro de Saúde').
+     * Busca os hospitais e maternidades mais proximos num raio de 7km (7000m).
      */
     public List<HealthCenterItem> buscarHospitaisProximos(double userLat, double userLon) {
         return searchNearestHealthCenters(userLat, userLon);
     }
 
     /**
-     * Executa a query Overpass no OSM buscando hospital, clinic e nomes relacionados num raio de 15000m.
+     * Executa a query Overpass no OSM buscando hospital e maternidade num raio de 7000m.
      * Utiliza java.net.URI para evitar re-encoding pelo RestTemplate e faz desduplicacao de nomes.
      */
     @SuppressWarnings("unchecked")
     public List<HealthCenterItem> searchNearestHealthCenters(double userLat, double userLon) {
-        // Query Overpass com raio de 15km e busca por Regex no nome (case-insensitive)
+        // Query Overpass com raio de 7km (7000m) e busca por Regex no nome (Hospital ou Maternidade)
         String query = String.format(Locale.US,
-                "[out:json][timeout:25];(" +
-                "node[\"amenity\"~\"hospital|clinic\"](around:15000,%.6f,%.6f);" +
-                "way[\"amenity\"~\"hospital|clinic\"](around:15000,%.6f,%.6f);" +
-                "node[\"name\"~\"Hospital|Maternidade|Centro de Saúde|Posto de Saúde|Clínica\",i](around:15000,%.6f,%.6f);" +
-                "way[\"name\"~\"Hospital|Maternidade|Centro de Saúde|Posto de Saúde|Clínica\",i](around:15000,%.6f,%.6f);" +
-                ");out center tags;",
+                "[out:json][timeout:10];" +
+                "(" +
+                "  node[\"amenity\"=\"hospital\"](around:7000,%.6f,%.6f);" +
+                "  node[\"name\"~\"Hospital|Maternidade\",i](around:7000,%.6f,%.6f);" +
+                "  way[\"amenity\"=\"hospital\"](around:7000,%.6f,%.6f);" +
+                "  way[\"name\"~\"Hospital|Maternidade\",i](around:7000,%.6f,%.6f);" +
+                ");" +
+                "out center tags;",
                 userLat, userLon, userLat, userLon, userLat, userLon, userLat, userLon);
 
         // Constroi java.net.URI pre-formatado para evitar que o RestTemplate faça re-encoding da URL

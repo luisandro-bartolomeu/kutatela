@@ -25,7 +25,7 @@ class WhatsAppControllerTest {
 
     @BeforeEach
     void setUp() {
-        WhatsAppService stubService = new WhatsAppService(null, null) {
+        WhatsAppService stubService = new WhatsAppService(null, null, null) {
             @Override
             public void processIncomingWhatsAppMessage(WhatsAppWebhookPayloadDto payload) {
                 processed = true;

@@ -21,6 +21,7 @@ public class WhatsAppService {
 
     private final RestTemplate restTemplate;
     private final UssdSessionService ussdSessionService;
+    private final VaccinationService vaccinationService;
 
     private static class WhatsAppSession {
         private final String sessionText;
@@ -45,9 +46,10 @@ public class WhatsAppService {
     @Value("${kutatela.gowa.device-id:${gowa.api.default-device-id:kutatela_mama}}")
     private String defaultDeviceId;
 
-    public WhatsAppService(RestTemplate restTemplate, UssdSessionService ussdSessionService) {
+    public WhatsAppService(RestTemplate restTemplate, UssdSessionService ussdSessionService, VaccinationService vaccinationService) {
         this.restTemplate = restTemplate;
         this.ussdSessionService = ussdSessionService;
+        this.vaccinationService = vaccinationService;
     }
 
     /**
@@ -87,6 +89,17 @@ public class WhatsAppService {
                 currentSessionText = "";
             } else {
                 currentSessionText = existingSession.getSessionText();
+            }
+        }
+
+        // Interceção para pergunta direta sobre vacinas no WhatsApp (ex: "O que é a Pentavalente?")
+        if (currentSessionText.isEmpty() && !receivedText.isEmpty() && !receivedText.matches("[1-5]") && !receivedText.equalsIgnoreCase("menu") && !receivedText.equalsIgnoreCase("00")) {
+            String vaccineDescription = vaccinationService.findVaccineDescriptionByQuery(receivedText);
+            if (vaccineDescription != null) {
+                String reply = vaccineDescription + "\n\nDigite 0 para voltar ao menu.";
+                sessionCache.put(fromPhone, new WhatsAppSession("1*3", System.currentTimeMillis()));
+                sendWhatsAppMessage(activeDeviceId, fromPhone, reply);
+                return;
             }
         }
 

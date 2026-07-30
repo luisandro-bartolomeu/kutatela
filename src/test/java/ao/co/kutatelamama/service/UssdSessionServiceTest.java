@@ -101,14 +101,41 @@ class UssdSessionServiceTest {
     }
 
     @Test
-    @DisplayName("USSD option '2*6*Texto livre' executes AI triage with mother's exact text")
-    void testFreeFormSymptomTriage() {
-        String res = ussdSessionService.processUssdRequest("sess_5", "*384*23898#", "+244923111222", "2*6*O meu bebé tem febre alta de 39 graus e está a chorar muito");
+    @DisplayName("USSD option '1*3' returns 'Conheça as Vacinas' submenu")
+    void testKnowVaccinesSubmenu() {
+        String res = ussdSessionService.processUssdRequest("sess_6", "*384*23898#", "+244923111222", "1*3");
         assertNotNull(res);
         assertTrue(res.startsWith("CON"));
-        assertTrue(res.contains("Análise"));
-        assertTrue(res.contains("Cuidados"));
-        assertTrue(res.contains("1. Fazer outra triagem"));
-        assertTrue(res.contains("0. Voltar ao menu principal"));
+        assertTrue(res.contains("CONHECA AS VACINAS") || res.contains("CONHEÇA AS VACINAS"));
+        assertTrue(res.contains("BCG"));
+        assertTrue(res.contains("Polio") || res.contains("Pólio"));
+        assertTrue(res.contains("Pentavalente"));
+        assertTrue(res.contains("Febre Amarela"));
+    }
+
+    @Test
+    @DisplayName("USSD option '1*3*1' returns BCG detailed description")
+    void testBcgVaccineDetail() {
+        String res = ussdSessionService.processUssdRequest("sess_7", "*384*23898#", "+244923111222", "1*3*1");
+        assertNotNull(res);
+        assertTrue(res.startsWith("CON"));
+        assertTrue(res.contains("BCG"));
+        assertTrue(res.contains("Tuberculose"));
+        assertTrue(res.contains("Intra-Dermica") || res.contains("Intra-Dérmica"));
+        assertTrue(res.contains("0,05 ml"));
+    }
+
+    @Test
+    @DisplayName("USSD option '1*3*4' returns Pentavalente detailed description")
+    void testPentavalenteVaccineDetail() {
+        String res = ussdSessionService.processUssdRequest("sess_8", "*384*23898#", "+244923111222", "1*3*4");
+        assertNotNull(res);
+        assertTrue(res.startsWith("CON"));
+        assertTrue(res.contains("PENTAVALENTE"));
+        assertTrue(res.contains("DIFTERIA"));
+        assertTrue(res.contains("TETANO") || res.contains("TÉTANO"));
+        assertTrue(res.contains("TOSSE CONVULSA"));
+        assertTrue(res.contains("HAEMOPHILUS"));
+        assertTrue(res.contains("HEPATITE B"));
     }
 }

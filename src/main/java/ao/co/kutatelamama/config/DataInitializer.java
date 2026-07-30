@@ -42,18 +42,32 @@ public class DataInitializer implements CommandLineRunner {
         if (vaccineRepository.count() > 0) return;
 
         List<Vaccine> vaccines = List.of(
-            new Vaccine("BCG", 0, "Tuberculose", "Dose única ao nascer. Protege contra formas graves de tuberculose (meningite tuberculosa)."),
-            new Vaccine("Polio (VIP)", 0, "Poliomielite (Paralisia Infantil)", "Dose de nascimento via oral ou injetável."),
-            new Vaccine("Pentavalente 1ª Dose", 2, "Difteria, Tétano, Coqueluche, Hepatite B, Hib", "Protege contra 5 doenças graves. Aplicar aos 2 meses."),
-            new Vaccine("Polio 2ª Dose", 2, "Poliomielite", "Segunda dose da vacina contra paralisia infantil."),
-            new Vaccine("Rotavírus 1ª Dose", 2, "Diarreia grave por Rotavírus", "Previne diarreias e desidratação grave em recém-nascidos."),
-            new Vaccine("Pentavalente 2ª Dose", 4, "Difteria, Tétano, Coqueluche, Hepatite B, Hib", "Segunda dose de reforço."),
-            new Vaccine("Polio 3ª Dose", 4, "Poliomielite", "Terceira dose da vacina contra paralisia infantil."),
-            new Vaccine("Rotavírus 2ª Dose", 4, "Diarreia grave por Rotavírus", "Segunda dose oral."),
-            new Vaccine("Pentavalente 3ª Dose", 6, "Difteria, Tétano, Coqueluche, Hepatite B, Hib", "Terceira dose de imunização completa."),
-            new Vaccine("Polio 4ª Dose", 6, "Poliomielite", "Quarta dose."),
-            new Vaccine("Febre Amarela", 9, "Febre Amarela", "Dose essencial para zonas tropicais como Angola."),
-            new Vaccine("Tríplice Viral (VAS)", 12, "Sarampo, Rubéola, Caxumba", "Dose de 1 ano de vida para proteção contra surtos.")
+            // Ao Nascer
+            new Vaccine("Pólio (Dose 0)", 0, "Poliomielite", "Dose 0 via Oral (2 gotas)."),
+            new Vaccine("BCG", 0, "Tuberculose", "Dose única via Intra-Dérmica no braço esquerdo (0,05 ml)."),
+            new Vaccine("Hepatite B", 0, "Hepatite B", "Dose única via Intra-Muscular na coxa esquerda (0,5 ml). Administrar até 7 dias após o nascimento."),
+            // 2 Meses
+            new Vaccine("Pólio (1ª dose)", 2, "Poliomielite", "1ª dose via Oral (2 gotas)."),
+            new Vaccine("Rotavírus (1ª dose)", 2, "Diarreia grave por Rotavírus", "1ª dose via Oral sublingual (todo o tubo). Administrar dos 2 a <4 meses."),
+            new Vaccine("Pneumococo (1ª dose)", 2, "Pneumonia, Meningite, Otite e Bronquite", "1ª dose via Intra-Muscular na coxa direita (0,5 ml)."),
+            new Vaccine("Pentavalente (1ª dose)", 2, "Difteria, Tétano, Tosse Convulsa, Hib e Hepatite B", "1ª dose via Intra-Muscular na coxa esquerda (0,5 ml)."),
+            // 4 Meses
+            new Vaccine("Pólio (2ª dose)", 4, "Poliomielite", "2ª dose via Oral (2 gotas)."),
+            new Vaccine("Rotavírus (2ª dose)", 4, "Diarreia grave por Rotavírus", "2ª dose via Oral sublingual (todo o tubo). Administrar dos 4 a <7 meses."),
+            new Vaccine("Pólio Inativada (Dose Única)", 4, "Poliomielite", "Dose única via Intra-Muscular na coxa direita (0,5 ml)."),
+            new Vaccine("Pneumococo (2ª dose)", 4, "Pneumonia, Meningite, Otite e Bronquite", "2ª dose via Intra-Muscular na coxa direita (0,5 ml)."),
+            new Vaccine("Pentavalente (2ª dose)", 4, "Difteria, Tétano, Tosse Convulsa, Hib e Hepatite B", "2ª dose via Intra-Muscular na coxa esquerda (0,5 ml)."),
+            // 6 Meses
+            new Vaccine("Pólio (3ª dose)", 6, "Poliomielite", "3ª dose via Oral (2 gotas)."),
+            new Vaccine("Vitamina A (1ª dose)", 6, "Suplementação de Vitamina A", "1ª dose via Oral (3 gotas)."),
+            new Vaccine("Pneumococo (3ª dose)", 6, "Pneumonia, Meningite, Otite e Bronquite", "3ª dose via Intra-Muscular na coxa direita (0,5 ml)."),
+            new Vaccine("Pentavalente (3ª dose)", 6, "Difteria, Tétano, Tosse Convulsa, Hib e Hepatite B", "3ª dose via Intra-Muscular na coxa esquerda (0,5 ml)."),
+            // 9 Meses
+            new Vaccine("Vitamina A (2ª dose)", 9, "Suplementação de Vitamina A", "2ª dose via Oral (3 gotas)."),
+            new Vaccine("Sarampo/Rubéola (1ª dose)", 9, "Sarampo e Rubéola", "1ª dose via Sub-Cutânea no braço esquerdo (0,5 ml)."),
+            new Vaccine("Febre Amarela", 9, "Febre Amarela", "Dose única via Sub-Cutânea no braço direito (0,5 ml)."),
+            // 15 Meses
+            new Vaccine("Sarampo/Rubéola (2ª dose - Reforço)", 15, "Sarampo e Rubéola", "2ª dose (reforço) via Sub-Cutânea no braço esquerdo (0,5 ml).")
         );
 
         vaccineRepository.saveAll(vaccines);

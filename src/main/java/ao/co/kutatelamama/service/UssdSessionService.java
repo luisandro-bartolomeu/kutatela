@@ -206,8 +206,8 @@ public class UssdSessionService {
                 }
             }
 
-            // Em Vacinação (1) e Dicas (3), o nível 2 ("1*1", "3*1") é uma tela final/folha com '0. Voltar'.
-            boolean isLeafScreenState = stack.size() >= 2 && ("1".equals(stack.get(0)) || "3".equals(stack.get(0)));
+            // Em Vacinação (1) e Dicas (3), verifica se o estado atual é uma folha (ex: 1*1, 1*2, 1*4, 1*3*1, 3*1)
+            boolean isLeafScreenState = isLeafScreenState(stack);
 
             // Verifica se está na fase de introdução de dados livres (opção 4 ou opção 2->6 texto livre)
             boolean isDataInputState = (stack.size() == 2 && ("4".equals(stack.get(0)) || ("2".equals(stack.get(0)) && "6".equals(stack.get(1)))));
@@ -220,10 +220,15 @@ public class UssdSessionService {
                 }
             } else {
                 if (isLeafScreenState) {
-                    String parentMenu = stack.get(0);
-                    stack.clear();
-                    stack.add(parentMenu);
-                    stack.add(t);
+                    if (stack.size() >= 3 && "1".equals(stack.get(0)) && "3".equals(stack.get(1))) {
+                        stack.remove(2);
+                        stack.add(t);
+                    } else {
+                        String parentMenu = stack.get(0);
+                        stack.clear();
+                        stack.add(parentMenu);
+                        stack.add(t);
+                    }
                 } else {
                     stack.add(t);
                 }
@@ -235,6 +240,10 @@ public class UssdSessionService {
             stack.clear();
         } else if (stack.size() == 2 && !isSubChoiceValid(stack.get(0), stack.get(1))) {
             stack.remove(1);
+        } else if (stack.size() >= 3 && "1".equals(stack.get(0)) && "3".equals(stack.get(1))) {
+            if (!isValidVaccineChoice(stack.get(2))) {
+                stack.remove(2);
+            }
         } else if (stack.size() >= 3 && "2".equals(stack.get(0)) && !"6".equals(stack.get(1))) {
             if (!isValidDetailChoice(getCategoryFromChoice(stack.get(1)), stack.get(2))) {
                 stack.remove(2);
@@ -244,13 +253,41 @@ public class UssdSessionService {
         return stack.toArray(new String[0]);
     }
 
+    private boolean isLeafScreenState(java.util.List<String> stack) {
+        if (stack.size() < 2) return false;
+        String mainChoice = stack.get(0);
+        String subChoice = stack.get(1);
+
+        if ("1".equals(mainChoice)) {
+            if ("1".equals(subChoice) || "2".equals(subChoice) || "4".equals(subChoice)) {
+                return true;
+            }
+            if ("3".equals(subChoice) && stack.size() >= 3) {
+                return true;
+            }
+            return false;
+        }
+
+        if ("3".equals(mainChoice)) {
+            return stack.size() >= 2;
+        }
+
+        return false;
+    }
+
+    private boolean isValidVaccineChoice(String choice) {
+        if (choice == null) return false;
+        String c = choice.trim();
+        return "0".equals(c) || "1".equals(c) || "2".equals(c) || "3".equals(c) || "4".equals(c) || "5".equals(c) || "6".equals(c) || "7".equals(c) || "8".equals(c);
+    }
+
     private boolean isMainChoiceValid(String choice) {
         return "1".equals(choice) || "2".equals(choice) || "3".equals(choice) || "4".equals(choice) || "5".equals(choice);
     }
 
     private boolean isSubChoiceValid(String mainChoice, String subChoice) {
         if ("1".equals(mainChoice)) {
-            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice);
+            return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice);
         }
         if ("2".equals(mainChoice)) {
             return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice) || "5".equals(subChoice) || "6".equals(subChoice);
@@ -308,7 +345,8 @@ public class UssdSessionService {
                    "================================\n" +
                    "1. Ver próximas vacinas do bebé\n" +
                    "2. Calendário completo nacional\n" +
-                   "3. Unidade de saúde mais próxima\n" +
+                   "3. Conheça as Vacinas\n" +
+                   "4. Unidade de saúde mais próxima\n" +
                    "0. Voltar ao menu principal";
         }
 
@@ -325,10 +363,30 @@ public class UssdSessionService {
                 String calendar = vaccinationService.formatFullNationalCalendar();
                 return "CON " + calendar + "\n0. Voltar ao menu principal";
             case "3":
+                return handleKnowVaccinesSubmenu(parts, mother);
+            case "4":
                 return "CON 📍 Mãe, para encontrarmos o posto de vacinação mais próximo de si, clique no ícone de Clipe (Anexo) ou mais (+) aqui no seu WhatsApp, selecione 'Localização' e envie a sua 'Localização atual'.";
             default:
                 return "CON ⚠️ Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby);
         }
+    }
+
+    private String handleKnowVaccinesSubmenu(String[] parts, Mother mother) {
+        if (parts.length == 2) {
+            return "CON " + vaccinationService.formatVaccineDetailMenu();
+        }
+
+        String vaccineChoice = parts[2];
+        if ("0".equals(vaccineChoice)) {
+            return handleVaccinationMenu(new String[]{"1"}, mother, null);
+        }
+
+        String detail = vaccinationService.formatVaccineDetail(vaccineChoice);
+        if (detail != null) {
+            return "CON " + detail + "\n\nDigite 0 para voltar";
+        }
+
+        return "CON ⚠️ Opção inválida. Por favor escolha um número de 1 a 8:\n\n" + vaccinationService.formatVaccineDetailMenu();
     }
 
     private String handleTriageMenu(String[] parts, Mother mother, Baby baby) {
