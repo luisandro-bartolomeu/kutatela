@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.*;
 
 @Service
@@ -49,7 +50,7 @@ public class LocationService {
      */
     public String findNearestHealthCentersMessage(double userLat, double userLon) {
         try {
-            List<HealthCenterItem> centers = searchNearestHealthCenters(userLat, userLon);
+            List<HealthCenterItem> centers = buscarHospitaisProximos(userLat, userLon);
 
             if (centers.isEmpty()) {
                 return "📍 Mãe, não encontramos postos ou clínicas de saúde num raio de 10km da sua localização atual.\n\n" +
@@ -80,23 +81,33 @@ public class LocationService {
     }
 
     /**
+     * Busca os hospitais e clinicas mais proximos num raio de 10km.
+     */
+    public List<HealthCenterItem> buscarHospitaisProximos(double userLat, double userLon) {
+        return searchNearestHealthCenters(userLat, userLon);
+    }
+
+    /**
      * Executa a query Overpass no OSM buscando hospital e clinic num raio de 10000m.
+     * Utiliza java.net.URI para evitar dupla codificacao (Double URL Encoding) no RestTemplate.
      */
     @SuppressWarnings("unchecked")
     public List<HealthCenterItem> searchNearestHealthCenters(double userLat, double userLon) {
         String query = String.format(Locale.US,
-                "[out:json][timeout:25];(node[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f);way[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f););out center;",
+                "[out:json][timeout:25];(node[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f);way[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f););out center tags;",
                 userLat, userLon, userLat, userLon);
 
-        String url = UriComponentsBuilder.fromHttpUrl(OVERPASS_API_URL)
+        // Constroi java.net.URI pre-formatado para evitar re-encoding pelo RestTemplate
+        URI uri = UriComponentsBuilder.fromHttpUrl(OVERPASS_API_URL)
                 .queryParam("data", query)
-                .toUriString();
+                .build()
+                .toUri();
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", USER_AGENT);
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, Map.class);
 
         List<HealthCenterItem> list = new ArrayList<>();
         if (response.getBody() != null && response.getBody().containsKey("elements")) {
@@ -106,6 +117,7 @@ public class LocationService {
                     Double lat = parseDouble(elem.get("lat"));
                     Double lon = parseDouble(elem.get("lon"));
 
+                    // Se for um 'way' ou 'relation', extrai a latitude e longitude de dentro do no 'center'
                     if ((lat == null || lon == null) && elem.containsKey("center") && elem.get("center") instanceof Map) {
                         Map<String, Object> center = (Map<String, Object>) elem.get("center");
                         lat = parseDouble(center.get("lat"));
@@ -134,7 +146,7 @@ public class LocationService {
             }
         }
 
-        // Ordena pela menor distancia
+        // Ordena pela menor distancia em km
         list.sort(Comparator.comparingDouble(HealthCenterItem::getDistanceKm));
         return list;
     }
