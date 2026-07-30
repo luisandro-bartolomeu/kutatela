@@ -53,7 +53,7 @@ public class LocationService {
             List<HealthCenterItem> centers = buscarHospitaisProximos(userLat, userLon);
 
             if (centers.isEmpty()) {
-                return "📍 Mãe, não encontramos postos ou clínicas de saúde num raio de 10km da sua localização atual.\n\n" +
+                return "📍 Mãe, não encontramos postos ou clínicas de saúde num raio de 15km da sua localização atual.\n\n" +
                        "Recomendamos dirigir-se à unidade de saúde mais próxima do seu município ou contactar os serviços locais.";
             }
 
@@ -81,23 +81,30 @@ public class LocationService {
     }
 
     /**
-     * Busca os hospitais e clinicas mais proximos num raio de 10km.
+     * Busca os hospitais, maternidades e clinicas mais proximos num raio expandido de 15km (15000m).
+     * Aplica busca tolerante por tags 'amenity' e regex por nome ('Hospital', 'Maternidade', 'Centro de Saúde').
      */
     public List<HealthCenterItem> buscarHospitaisProximos(double userLat, double userLon) {
         return searchNearestHealthCenters(userLat, userLon);
     }
 
     /**
-     * Executa a query Overpass no OSM buscando hospital e clinic num raio de 10000m.
-     * Utiliza java.net.URI para evitar dupla codificacao (Double URL Encoding) no RestTemplate.
+     * Executa a query Overpass no OSM buscando hospital, clinic e nomes relacionados num raio de 15000m.
+     * Utiliza java.net.URI para evitar re-encoding pelo RestTemplate e faz desduplicacao de nomes.
      */
     @SuppressWarnings("unchecked")
     public List<HealthCenterItem> searchNearestHealthCenters(double userLat, double userLon) {
+        // Query Overpass com raio de 15km e busca por Regex no nome (case-insensitive)
         String query = String.format(Locale.US,
-                "[out:json][timeout:25];(node[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f);way[\"amenity\"~\"hospital|clinic\"](around:10000,%.6f,%.6f););out center tags;",
-                userLat, userLon, userLat, userLon);
+                "[out:json][timeout:25];(" +
+                "node[\"amenity\"~\"hospital|clinic\"](around:15000,%.6f,%.6f);" +
+                "way[\"amenity\"~\"hospital|clinic\"](around:15000,%.6f,%.6f);" +
+                "node[\"name\"~\"Hospital|Maternidade|Centro de Saúde|Posto de Saúde|Clínica\",i](around:15000,%.6f,%.6f);" +
+                "way[\"name\"~\"Hospital|Maternidade|Centro de Saúde|Posto de Saúde|Clínica\",i](around:15000,%.6f,%.6f);" +
+                ");out center tags;",
+                userLat, userLon, userLat, userLon, userLat, userLon, userLat, userLon);
 
-        // Constroi java.net.URI pre-formatado para evitar re-encoding pelo RestTemplate
+        // Constroi java.net.URI pre-formatado para evitar que o RestTemplate faça re-encoding da URL
         URI uri = UriComponentsBuilder.fromHttpUrl(OVERPASS_API_URL)
                 .queryParam("data", query)
                 .build()
@@ -110,6 +117,8 @@ public class LocationService {
         ResponseEntity<Map> response = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, Map.class);
 
         List<HealthCenterItem> list = new ArrayList<>();
+        Set<String> addedKeys = new HashSet<>();
+
         if (response.getBody() != null && response.getBody().containsKey("elements")) {
             List<Map<String, Object>> elements = (List<Map<String, Object>>) response.getBody().get("elements");
             if (elements != null) {
@@ -117,7 +126,7 @@ public class LocationService {
                     Double lat = parseDouble(elem.get("lat"));
                     Double lon = parseDouble(elem.get("lon"));
 
-                    // Se for um 'way' ou 'relation', extrai a latitude e longitude de dentro do no 'center'
+                    // Se for um 'way' ou 'relation', extrai latitude e longitude do no 'center'
                     if ((lat == null || lon == null) && elem.containsKey("center") && elem.get("center") instanceof Map) {
                         Map<String, Object> center = (Map<String, Object>) elem.get("center");
                         lat = parseDouble(center.get("lat"));
@@ -139,8 +148,17 @@ public class LocationService {
                             }
                         }
 
-                        double distance = calculateDistanceKm(userLat, userLon, lat, lon);
-                        list.add(new HealthCenterItem(name, lat, lon, distance));
+                        // Desduplicacao baseada no nome normalizado
+                        String nameKey = name.toLowerCase().trim();
+                        String uniqueKey = ("Unidade de Saúde".equalsIgnoreCase(name) || "Hospital".equalsIgnoreCase(name) || "Centro de Saúde".equalsIgnoreCase(name))
+                                ? nameKey + "@" + String.format(Locale.US, "%.3f,%.3f", lat, lon)
+                                : nameKey;
+
+                        if (!addedKeys.contains(uniqueKey)) {
+                            addedKeys.add(uniqueKey);
+                            double distance = calculateDistanceKm(userLat, userLon, lat, lon);
+                            list.add(new HealthCenterItem(name, lat, lon, distance));
+                        }
                     }
                 }
             }
