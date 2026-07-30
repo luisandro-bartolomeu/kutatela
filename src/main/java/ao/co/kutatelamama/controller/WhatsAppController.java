@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/whatsapp")
@@ -70,19 +71,27 @@ public class WhatsAppController {
         if (payload.isLocationMessage()) {
             Double lat = payload.getLatitude();
             Double lon = payload.getLongitude();
-            String phone = payload.getCleanPhoneNumber();
-
-            log.info("📍 [WHATSAPP LOCATION] From: '{}', Lat: {}, Lon: {}, DeviceId: '{}'", phone, lat, lon, deviceId);
-
-            if (phone != null && lat != null && lon != null) {
-                String locationResponseMessage = locationService.findNearestHealthCentersMessage(lat, lon);
-                whatsAppService.sendWhatsAppMessage(deviceId, phone, locationResponseMessage);
-                return ResponseEntity.ok(Map.of(
-                        "status", "SUCCESS",
-                        "message", "Localização processada e resposta de postos de saúde enviada",
-                        "messageId", payload.getId()
-                ));
+            String rawPhone = payload.getCleanPhoneNumber();
+            String fromPhone = (rawPhone != null && rawPhone.contains("@"))
+                    ? rawPhone.split("@")[0].trim()
+                    : (rawPhone != null ? rawPhone.trim() : "");
+            if (!fromPhone.startsWith("+") && fromPhone.matches("\\d+")) {
+                fromPhone = "+" + fromPhone;
             }
+
+            log.info("[WHATSAPP LOCATION] From: '{}', Lat: {}, Lon: {}, DeviceId: '{}'", fromPhone, lat, lon, deviceId);
+
+            // CORREÇÃO DO LOOP: Responde imediatamente ao GoWA para ele não reenviar a mensagem
+            CompletableFuture.runAsync(() -> {
+                try {
+                    String resultado = locationService.buscarHospitaisProximos(lat, lon);
+                    whatsAppService.sendWhatsAppMessage(payload.getDeviceId(), payload.getCleanPhoneNumber(), resultado);
+                } catch (Exception e) {
+                    log.error("Erro no processamento assíncrono da localização", e);
+                }
+            });
+
+            return ResponseEntity.ok(Map.of("status", "RECEIVED"));
         }
 
         log.info("📩 [WHATSAPP WEBHOOK] Message ID: '{}', From: '{}', Text: '{}', DeviceId: '{}'",

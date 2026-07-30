@@ -101,7 +101,7 @@ public class LocationService {
 
     /**
      * Contingência via DeepSeek: Chamada HTTP POST para a API do DeepSeek (deepseek-chat)
-     * quando a Overpass API falhar ou não retornar dados.
+     * com System Prompt rígido e formato ultraconciso sem verborragia.
      */
     public String buscarHospitaisViaDeepSeek(double lat, double lon) {
         try {
@@ -114,14 +114,18 @@ public class LocationService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(deepseekApiKey.trim());
 
-            String systemPrompt = "Você é o assistente geográfico do projeto de saúde materno-infantil Kutatela Mama em Angola. " +
-                    "Receba a latitude e longitude da mãe, identifique com precisão o município ou bairro correspondente na província de Luanda/Angola " +
-                    "e liste os 3 principais hospitais ou maternidades públicas de referência mais próximos. " +
-                    "Adicione links de rotas públicos do Google Maps usando os nomes dos hospitais no formato exato: google.com. Seja acolhedor e direto.";
+            String systemPrompt = "Você é o assistente geográfico direto e curto do projeto Kutatela Mama. Seja extremamente conciso. Não cumprimente, não faça introduções e não use palavras de conforto. Identifique a região e cuspa APENAS a lista com os 3 hospitais e os links. Ponto final.";
 
             String userPrompt = String.format(Locale.US,
-                    "Mãe enviou localização. Coordenadas: Latitude: %.6f, Longitude: %.6f. " +
-                    "Identifique a região em Angola e liste os 3 hospitais públicos de referência com os links do Google Maps.",
+                    "Coordenadas: Lat: %.6f, Lon: %.6f. Formato esperado de resposta estrita:\n" +
+                    "📍 *Região estimada:* [Nome do Bairro/Município]\n\n" +
+                    "🏥 *Hospitais de Referência:*\n" +
+                    "1. *[Nome do Hospital 1]*\n" +
+                    "🔗 Rota: https://google.com[Nome+Codificado+Hospital+1+Municipio+Angola]\n\n" +
+                    "2. *[Nome do Hospital 2]*\n" +
+                    "🔗 Rota: https://google.com[Nome+Codificado+Hospital+2+Municipio+Angola]\n\n" +
+                    "3. *[Nome do Hospital 3]*\n" +
+                    "🔗 Rota: https://google.com[Nome+Codificado+Hospital+3+Municipio+Angola]",
                     lat, lon);
 
             Map<String, Object> requestBody = new HashMap<>();

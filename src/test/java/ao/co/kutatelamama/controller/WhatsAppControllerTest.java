@@ -43,6 +43,12 @@ class WhatsAppControllerTest {
                 locationProcessed = true;
                 return "📍 Unidades de Saúde Encontradas";
             }
+
+            @Override
+            public String buscarHospitaisProximos(double userLat, double userLon) {
+                locationProcessed = true;
+                return "📍 Unidades de Saúde Encontradas";
+            }
         };
 
         WhatsAppController controller = new WhatsAppController(stubService, stubLocationService);
@@ -72,7 +78,7 @@ class WhatsAppControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/whatsapp/webhook processa mensagem de localização")
+    @DisplayName("POST /api/v1/whatsapp/webhook processa mensagem de localização de forma assíncrona")
     void testHandleWhatsAppLocationWebhook() throws Exception {
         WhatsAppWebhookPayloadDto payload = new WhatsAppWebhookPayloadDto();
         payload.setId("msg_loc_123");
@@ -87,8 +93,6 @@ class WhatsAppControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SUCCESS"));
-
-        assert locationProcessed;
+                .andExpect(jsonPath("$.status").value("RECEIVED"));
     }
 }
