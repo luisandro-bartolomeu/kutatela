@@ -46,4 +46,21 @@ public class VaccinationController {
     public ResponseEntity<List<VaccinationRecord>> getBabyVaccinations(@PathVariable Long babyId) {
         return ResponseEntity.ok(vaccinationRecordRepository.findByBabyIdOrderByScheduledDateAsc(babyId));
     }
+
+    @PostMapping("/mark-completed")
+    public ResponseEntity<VaccinationRecord> markVaccineCompleted(@RequestBody ao.co.kutatelamama.dto.MarkVaccineRequestDto request) {
+        if (request.getRecordId() != null) {
+            VaccinationRecord updated = vaccinationService.markVaccineCompleted(
+                request.getRecordId(), request.getAdministeredDate(), request.getHealthCenterName()
+            );
+            return ResponseEntity.ok(updated);
+        } else if (request.getBabyId() != null && request.getVaccineId() != null) {
+            VaccinationRecord updated = vaccinationService.markVaccineCompletedByBabyAndVaccine(
+                request.getBabyId(), request.getVaccineId(), request.getAdministeredDate(), request.getHealthCenterName()
+            );
+            return ResponseEntity.ok(updated);
+        } else {
+            throw new IllegalArgumentException("Deve fornecer recordId ou (babyId e vaccineId)");
+        }
+    }
 }

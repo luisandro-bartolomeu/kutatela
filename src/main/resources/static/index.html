@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kutatela Mama 🌿 - Painel de Monitorização da Vacinação Infantil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="logo-icon">🌿</div>
+                <div>
+                    <h1 class="logo-title">Kutatela Mama</h1>
+                    <p class="logo-subtitle">Saúde Digital Materno-Infantil em Angola</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" id="btnRefresh" onclick="loadDashboardData()">
+                    <i class="fa-solid fa-rotate-right"></i> Atualizar Dados
+                </button>
+                <button class="btn btn-secondary" onclick="openUssdSimulatorModal()">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Simular USSD (*123#)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+        <!-- Hero Banner -->
+        <section class="hero-card">
+            <div class="hero-content">
+                <h2>Painel de Acompanhamento da Imunização Infantil</h2>
+                <p>Monitorização em tempo real das vacinas dos bebés registados por idade (em meses), identificando recém-nascidos com vacinas em falta e permitindo o disparo imediato de alertas para as mães via SMS e WhatsApp.</p>
+            </div>
+            <div class="hero-badge">
+                <i class="fa-solid fa-shield-heart"></i>
+                <span>PNI Angola (MINSA)</span>
+            </div>
+        </section>
+
+        <!-- Key Metrics Cards -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon bg-soft-primary">
+                    <i class="fa-solid fa-baby text-primary"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Total de Bebés</span>
+                    <h3 class="metric-value" id="valTotalBabies">-</h3>
+                    <span class="metric-sub" id="valTotalMothers">- Mães Cadastradas</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon bg-soft-success">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Bem Vacinados para o Mês</span>
+                    <h3 class="metric-value text-success" id="valWellVaccinated">-</h3>
+                    <span class="metric-sub">100% em dia para a sua idade</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon bg-soft-danger">
+                    <i class="fa-solid fa-circle-exclamation text-danger"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Com Vacinas em Falta</span>
+                    <h3 class="metric-value text-danger" id="valPendingVaccinated">-</h3>
+                    <span class="metric-sub">Necessitam de alerta/Posto</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon bg-soft-info">
+                    <i class="fa-solid fa-chart-line text-info"></i>
+                </div>
+                <div class="metric-info">
+                    <span class="metric-label">Taxa de Imunização</span>
+                    <h3 class="metric-value text-info" id="valVaccinationRate">0%</h3>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBarRate" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Controls Section -->
+        <section class="controls-section">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="inputSearch" placeholder="Pesquisar por nome do bebé, mãe, telefone ou município..." oninput="applyFilters()">
+            </div>
+
+            <div class="filters-group">
+                <div class="filter-item">
+                    <label><i class="fa-solid fa-filter"></i> Status de Vacinação:</label>
+                    <select id="selectStatusFilter" onchange="loadDashboardData()">
+                        <option value="">Todos os Bebés</option>
+                        <option value="PENDING" selected>🔴 Com Vacinas em Falta / Pendentes</option>
+                        <option value="WELL_VACCINATED">🟢 Bem Vacinados para o Mês</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label><i class="fa-solid fa-calendar-days"></i> Idade do Bebé:</label>
+                    <select id="selectAgeFilter" onchange="loadDashboardData()">
+                        <option value="">Todas as Idades</option>
+                        <option value="0">0 Meses (Ao Nascer)</option>
+                        <option value="2">2 Meses</option>
+                        <option value="4">4 Meses</option>
+                        <option value="6">6 Meses</option>
+                        <option value="9">9 Meses</option>
+                        <option value="12">12+ Meses</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Age Milestone Tabs -->
+        <section class="tabs-container">
+            <button class="tab-btn active" data-age="" onclick="setAgeTab(this, '')">Todos</button>
+            <button class="tab-btn" data-age="0" onclick="setAgeTab(this, '0')">👶 0 Meses (Ao Nascer)</button>
+            <button class="tab-btn" data-age="2" onclick="setAgeTab(this, '2')">🍼 2 Meses</button>
+            <button class="tab-btn" data-age="4" onclick="setAgeTab(this, '4')">🧸 4 Meses</button>
+            <button class="tab-btn" data-age="6" onclick="setAgeTab(this, '6')">🥣 6 Meses</button>
+            <button class="tab-btn" data-age="9" onclick="setAgeTab(this, '9')">☀️ 9 Meses</button>
+            <button class="tab-btn" data-age="12" onclick="setAgeTab(this, '12')">🎉 12+ Meses</button>
+        </section>
+
+        <!-- Baby Records Table & Cards Section -->
+        <section class="table-section">
+            <div class="section-header">
+                <h3><i class="fa-solid fa-list-check"></i> Relação de Bebés e Estado Vacinal</h3>
+                <span class="badge badge-neutral" id="lblRecordsCount">0 Bebés</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Bebé & Idade</th>
+                            <th>Mãe & Contacto</th>
+                            <th>Província / Município</th>
+                            <th>Status para o Mês</th>
+                            <th>Vacinas em Falta / Tomadas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBabiesBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fa-solid fa-spinner fa-spin fa-2x text-muted"></i>
+                                <p class="mt-2 text-muted">A carregar dados dos bebés...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Send Alert to Mother -->
+    <div class="modal-backdrop" id="modalAlert">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-paper-plane text-primary"></i> Enviar Alerta de Vacinação à Mãe</h3>
+                <button class="modal-close" onclick="closeModal('modalAlert')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formSendAlert" onsubmit="handleSendAlertSubmit(event)">
+                    <input type="hidden" id="alertBabyId">
+                    
+                    <div class="form-group">
+                        <label>Destinatário (Mãe / Telefone):</label>
+                        <input type="text" id="alertMotherInfo" class="form-control" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Canal de Envio:</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="alertChannel" value="SMS" checked>
+                                <span><i class="fa-solid fa-comment-sms text-info"></i> SMS (Africa's Talking)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="alertChannel" value="WHATSAPP">
+                                <span><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp (Gowa)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Conteúdo da Mensagem de Alerta:</label>
+                        <textarea id="alertMessageText" class="form-control" rows="4"></textarea>
+                        <small class="form-text text-muted">Pode personalizar a mensagem ou manter o texto sugerido pelo sistema.</small>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('modalAlert')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnSubmitAlert">
+                            <i class="fa-solid fa-paper-plane"></i> Enviar Alerta Agora
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Register Vaccine Administered -->
+    <div class="modal-backdrop" id="modalRegisterVaccine">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-syringe text-success"></i> Registo de Vacina Administrada</h3>
+                <button class="modal-close" onclick="closeModal('modalRegisterVaccine')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formRegisterVaccine" onsubmit="handleRegisterVaccineSubmit(event)">
+                    <input type="hidden" id="regBabyId">
+
+                    <div class="form-group">
+                        <label>Bebé:</label>
+                        <input type="text" id="regBabyName" class="form-control" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selecione a Vacina Administrada:</label>
+                        <select id="regSelectVaccine" class="form-control" required>
+                            <!-- Options dynamically loaded -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Data de Administração:</label>
+                        <input type="date" id="regAdminDate" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Centro de Saúde / Posto de Vacinação:</label>
+                        <input type="text" id="regHealthCenter" class="form-control" value="Centro de Saúde Materno-Infantil">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('modalRegisterVaccine')">Cancelar</button>
+                        <button type="submit" class="btn btn-success" id="btnSubmitReg">
+                            <i class="fa-solid fa-check"></i> Salvar Registo de Vacina
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: USSD Interactive Simulator (*123#) -->
+    <div class="modal-backdrop" id="modalUssd">
+        <div class="modal-content modal-phone">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-mobile-screen"></i> Simulador USSD Kutatela (*123#)</h3>
+                <button class="modal-close" onclick="closeModal('modalUssd')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="phone-screen">
+                    <div class="phone-header">
+                        <span>UNITEL / MOVICEL 4G</span>
+                        <span>*123#</span>
+                    </div>
+                    <div class="phone-display" id="ussdDisplay">
+                        CON Olá! Bem-vinda ao Kutatela Mama 🌿<br>
+                        A carregar menu...
+                    </div>
+                    <div class="phone-input-area">
+                        <input type="text" id="ussdInputText" placeholder="Digite a opção (ex: 1 ou 1*1)..." onkeydown="if(event.key==='Enter') sendUssdCommand()">
+                        <button class="btn btn-primary btn-sm" onclick="sendUssdCommand()">Enviar</button>
+                    </div>
+                    <div class="quick-ussd-buttons">
+                        <button onclick="quickUssd('*123#')">Menu (*123#)</button>
+                        <button onclick="quickUssd('1')">1. Vacinação</button>
+                        <button onclick="quickUssd('1*1')">1*1 (Vacinas Pendentes)</button>
+                        <button onclick="quickUssd('1*2')">1*2 (Marcar Vacina)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

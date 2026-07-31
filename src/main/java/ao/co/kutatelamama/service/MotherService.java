@@ -23,15 +23,18 @@ public class MotherService {
     private final BabyRepository babyRepository;
     private final VaccineRepository vaccineRepository;
     private final VaccinationRecordRepository vaccinationRecordRepository;
+    private final VaccinationService vaccinationService;
 
     public MotherService(MotherRepository motherRepository,
                          BabyRepository babyRepository,
                          VaccineRepository vaccineRepository,
-                         VaccinationRecordRepository vaccinationRecordRepository) {
+                         VaccinationRecordRepository vaccinationRecordRepository,
+                         VaccinationService vaccinationService) {
         this.motherRepository = motherRepository;
         this.babyRepository = babyRepository;
         this.vaccineRepository = vaccineRepository;
         this.vaccinationRecordRepository = vaccinationRecordRepository;
+        this.vaccinationService = vaccinationService;
     }
 
     public String normalizePhoneNumber(String phone) {
@@ -89,7 +92,8 @@ public class MotherService {
         Baby baby = getOrCreateDefaultBabyForMother(mother);
         baby.setFullName(babyName);
         baby.setBirthDate(LocalDate.now().minusMonths(babyAgeMonths));
-        babyRepository.save(baby);
+        baby = babyRepository.save(baby);
+        vaccinationService.ensureVaccinationRecordsExist(baby);
 
         return mother;
     }
@@ -116,15 +120,18 @@ public class MotherService {
     public Mother updateBabyAge(Mother mother, int babyAgeMonths) {
         Baby baby = getOrCreateDefaultBabyForMother(mother);
         baby.setBirthDate(LocalDate.now().minusMonths(babyAgeMonths));
-        babyRepository.save(baby);
+        baby = babyRepository.save(baby);
+        vaccinationService.ensureVaccinationRecordsExist(baby);
         return mother;
     }
 
     public Baby getOrCreateDefaultBabyForMother(Mother mother) {
-        return babyRepository.findFirstByMotherIdOrderByCreatedAtDesc(mother.getId())
+        Baby baby = babyRepository.findFirstByMotherIdOrderByCreatedAtDesc(mother.getId())
             .orElseGet(() -> {
-                Baby b = new Baby(mother, "Bebe de " + mother.getFullName(), "M", LocalDate.now().minusMonths(1));
+                Baby b = new Baby(mother, "Bebé de " + mother.getFullName(), "M", LocalDate.now().minusMonths(1));
                 return babyRepository.save(b);
             });
+        vaccinationService.ensureVaccinationRecordsExist(baby);
+        return baby;
     }
 }

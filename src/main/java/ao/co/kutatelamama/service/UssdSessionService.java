@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -199,7 +200,7 @@ public class UssdSessionService {
             }
 
             boolean isLeafScreenState = isLeafScreenState(stack, isWhatsApp);
-            boolean isDataInputState = (stack.size() == 2 && ("4".equals(stack.get(0)) || ("2".equals(stack.get(0)) && "6".equals(stack.get(1)))));
+            boolean isDataInputState = (stack.size() == 2 && ("4".equals(stack.get(0)) || ("2".equals(stack.get(0)) && "6".equals(stack.get(1))) || ("1".equals(stack.get(0)) && (("2".equals(stack.get(1)) && !isWhatsApp) || ("4".equals(stack.get(1)) && isWhatsApp)))));
 
             if ("00".equals(t)) {
                 stack.clear();
@@ -248,15 +249,18 @@ public class UssdSessionService {
 
         if ("1".equals(mainChoice)) {
             if (isWhatsApp) {
-                if ("1".equals(subChoice) || "2".equals(subChoice) || "4".equals(subChoice)) {
+                if ("1".equals(subChoice) || "2".equals(subChoice) || "5".equals(subChoice)) {
                     return true;
                 }
-                if ("3".equals(subChoice) && stack.size() >= 3) {
+                if (("3".equals(subChoice) || "4".equals(subChoice)) && stack.size() >= 3) {
                     return true;
                 }
                 return false;
             } else {
-                if ("1".equals(subChoice) || "2".equals(subChoice)) {
+                if ("1".equals(subChoice) || "3".equals(subChoice)) {
+                    return true;
+                }
+                if ("2".equals(subChoice) && stack.size() >= 3) {
                     return true;
                 }
                 return false;
@@ -283,9 +287,9 @@ public class UssdSessionService {
     private boolean isSubChoiceValid(String mainChoice, String subChoice, boolean isWhatsApp) {
         if ("1".equals(mainChoice)) {
             if (isWhatsApp) {
-                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice);
+                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice) || "4".equals(subChoice) || "5".equals(subChoice);
             } else {
-                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice);
+                return "0".equals(subChoice) || "1".equals(subChoice) || "2".equals(subChoice) || "3".equals(subChoice);
             }
         }
         if ("2".equals(mainChoice)) {
@@ -346,14 +350,15 @@ public class UssdSessionService {
                        "1. Ver próximas vacinas do bebé\n" +
                        "2. Calendário completo nacional\n" +
                        "3. Conheça as Vacinas\n" +
-                       "4. Unidade de saúde mais próxima\n" +
+                       "4. Registar vacina já tomada\n" +
+                       "5. Unidade de saúde mais próxima\n" +
                        "0. Voltar ao menu principal";
             } else {
-                // No USSD são removidos os itens cujas respostas são muito texto (Calendário completo e Conheça as Vacinas)
                 return "CON Calendário de Vacinação\n" +
                        "================================\n" +
                        "1. Ver próximas vacinas do bebé\n" +
-                       "2. Unidade de saúde mais próxima\n" +
+                       "2. Registar vacina já tomada\n" +
+                       "3. Unidade de saúde mais próxima\n" +
                        "0. Voltar ao menu principal";
             }
         }
@@ -367,13 +372,15 @@ public class UssdSessionService {
             switch (choice) {
                 case "1":
                     String upcoming = vaccinationService.formatUpcomingVaccinesForBaby(baby);
-                    return "CON " + upcoming + "\n0. Voltar ao menu principal";
+                    return "CON " + upcoming + "\n\n0. Voltar ao menu principal";
                 case "2":
                     String calendar = vaccinationService.formatFullNationalCalendar();
-                    return "CON " + calendar + "\n0. Voltar ao menu principal";
+                    return "CON " + calendar + "\n\n0. Voltar ao menu principal";
                 case "3":
                     return handleKnowVaccinesSubmenu(parts, mother);
                 case "4":
+                    return handleRegisterVaccineSubmenu(parts, mother, baby);
+                case "5":
                     return "CON Mãe, para encontrarmos o posto de vacinação mais próximo de si, clique no ícone de Clipe (Anexo) ou mais (+) aqui no seu WhatsApp, selecione 'Localização' e envie a sua 'Localização atual'.";
                 default:
                     return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby, isWhatsApp);
@@ -383,14 +390,58 @@ public class UssdSessionService {
             switch (choice) {
                 case "1":
                     String upcoming = vaccinationService.formatUpcomingVaccinesForBaby(baby);
-                    return "CON " + upcoming + "\n0. Voltar ao menu principal";
+                    return "CON " + upcoming + "\n\n0. Voltar ao menu principal";
                 case "2":
+                    return handleRegisterVaccineSubmenu(parts, mother, baby);
+                case "3":
                     String healthCenter = vaccinationService.getNearestHealthCenter(mother.getProvince());
                     return "CON " + healthCenter + "\n\n0. Voltar ao menu principal";
                 default:
                     return "CON Opção inválida. Por favor escolha uma opção do menu:\n\n" + handleVaccinationMenu(new String[]{"1"}, mother, baby, isWhatsApp);
             }
         }
+    }
+
+    private String handleRegisterVaccineSubmenu(String[] parts, Mother mother, Baby baby) {
+        if (baby == null) {
+            return "END Nenhum bebé registado. Por favor registe o seu bebé primeiro.";
+        }
+        
+        List<ao.co.kutatelamama.domain.entity.VaccinationRecord> nonCompleted = vaccinationService.getNonCompletedVaccinesForBaby(baby);
+
+        if (nonCompleted.isEmpty()) {
+            return "CON Parabéns! Todas as vacinas do(a) " + baby.getFullName() + " estão concluídas!\n\n0. Voltar ao menu principal";
+        }
+
+        if (parts.length == 2) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("CON Registar Vacina Tomada (").append(baby.getFullName()).append("):\n");
+            int idx = 1;
+            for (ao.co.kutatelamama.domain.entity.VaccinationRecord r : nonCompleted) {
+                if (idx > 7) break;
+                sb.append(idx).append(". [").append(r.getVaccine().getRecommendedAgeMonths()).append("M] ")
+                  .append(r.getVaccine().getName()).append("\n");
+                idx++;
+            }
+            sb.append("0. Voltar");
+            return sb.toString();
+        }
+
+        String selectIdxStr = parts[2];
+        if ("0".equals(selectIdxStr)) {
+            return buildMainMenu(mother);
+        }
+
+        try {
+            int selectedIdx = Integer.parseInt(selectIdxStr.trim());
+            if (selectedIdx >= 1 && selectedIdx <= nonCompleted.size()) {
+                ao.co.kutatelamama.domain.entity.VaccinationRecord target = nonCompleted.get(selectedIdx - 1);
+                vaccinationService.markVaccineCompleted(target.getId(), java.time.LocalDate.now(), "Posto de Saúde");
+                return "END Vacina " + target.getVaccine().getName() + " registada como CONCLUÍDA com sucesso para " + baby.getFullName() + "! 🌿";
+            }
+        } catch (Exception ignored) {}
+
+        return "CON Opção inválida.\n\n" + handleRegisterVaccineSubmenu(new String[]{"1", "2"}, mother, baby);
     }
 
     private String handleKnowVaccinesSubmenu(String[] parts, Mother mother) {

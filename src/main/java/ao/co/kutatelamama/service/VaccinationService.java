@@ -24,39 +24,133 @@ public class VaccinationService {
         this.vaccineRepository = vaccineRepository;
     }
 
+    public void ensureVaccinationRecordsExist(Baby baby) {
+        if (baby == null || baby.getId() == null) return;
+        List<VaccinationRecord> existing = vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby);
+        List<Vaccine> allVaccines = vaccineRepository.findAllByOrderByRecommendedAgeMonthsAsc();
+        
+        if (existing.size() < allVaccines.size()) {
+            java.util.Set<Long> existingVaccineIds = existing.stream()
+                .map(r -> r.getVaccine().getId())
+                .collect(java.util.stream.Collectors.toSet());
+            
+            for (Vaccine v : allVaccines) {
+                if (!existingVaccineIds.contains(v.getId())) {
+                    LocalDate scheduledDate = baby.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
+                    vaccinationRecordRepository.save(new VaccinationRecord(
+                        baby, v, scheduledDate, VaccineStatus.SCHEDULED, "Posto de Saúde"
+                    ));
+                }
+            }
+        }
+    }
+
+    public List<VaccinationRecord> getPendingVaccinesForBabyAge(Baby baby) {
+        ensureVaccinationRecordsExist(baby);
+        long ageMonths = baby.getAgeInMonths();
+        return vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby).stream()
+            .filter(r -> r.getVaccine().getRecommendedAgeMonths() <= ageMonths)
+            .filter(r -> r.getStatus() != VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<VaccinationRecord> getCompletedVaccinesForBaby(Baby baby) {
+        ensureVaccinationRecordsExist(baby);
+        return vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby).stream()
+            .filter(r -> r.getStatus() == VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<VaccinationRecord> getNonCompletedVaccinesForBaby(Baby baby) {
+        ensureVaccinationRecordsExist(baby);
+        return vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby).stream()
+            .filter(r -> r.getStatus() != VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
+    }
+
+    public boolean isBabyWellVaccinatedForAge(Baby baby) {
+        return getPendingVaccinesForBabyAge(baby).isEmpty();
+    }
+
+    public VaccinationRecord markVaccineCompleted(Long recordId, LocalDate administeredDate, String healthCenterName) {
+        VaccinationRecord record = vaccinationRecordRepository.findById(recordId)
+            .orElseThrow(() -> new IllegalArgumentException("Registo de vacina não encontrado com ID: " + recordId));
+        
+        record.setStatus(VaccineStatus.COMPLETED);
+        record.setAdministeredDate(administeredDate != null ? administeredDate : LocalDate.now());
+        if (healthCenterName != null && !healthCenterName.isBlank()) {
+            record.setHealthCenterName(healthCenterName);
+        }
+        return vaccinationRecordRepository.save(record);
+    }
+
+    public VaccinationRecord markVaccineCompletedByBabyAndVaccine(Long babyId, Long vaccineId, LocalDate administeredDate, String healthCenterName) {
+        List<VaccinationRecord> records = vaccinationRecordRepository.findByBabyIdOrderByScheduledDateAsc(babyId);
+        VaccinationRecord record = records.stream()
+            .filter(r -> r.getVaccine().getId().equals(vaccineId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Registo de vacina não encontrado para o bebé ID " + babyId + " e vacina ID " + vaccineId));
+
+        record.setStatus(VaccineStatus.COMPLETED);
+        record.setAdministeredDate(administeredDate != null ? administeredDate : LocalDate.now());
+        if (healthCenterName != null && !healthCenterName.isBlank()) {
+            record.setHealthCenterName(healthCenterName);
+        }
+        return vaccinationRecordRepository.save(record);
+    }
+
     public String formatUpcomingVaccinesForBaby(Baby baby) {
         if (baby == null) {
             return "Nenhum bebé registado. Por favor registe o seu bebé primeiro.";
         }
 
+        ensureVaccinationRecordsExist(baby);
         List<VaccinationRecord> records = vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby);
 
         if (records.isEmpty()) {
-            return "Sem vacinas pendentes no momento.";
+            return "Sem registos vacinais para este bebé.";
         }
 
+        long ageMonths = baby.getAgeInMonths();
         StringBuilder sb = new StringBuilder();
-        sb.append("Próximas vacinas do(a) ").append(baby.getFullName()).append(":\n");
+        sb.append("Vacinas do(a) ").append(baby.getFullName())
+          .append(" (").append(ageMonths).append(" mes").append(ageMonths == 1 ? "" : "es").append("):\n");
 
-        int count = 0;
-        for (VaccinationRecord rec : records) {
-            if (count >= 4) break; // Limit for screen size
+        List<VaccinationRecord> overdueOrPending = records.stream()
+            .filter(r -> r.getVaccine().getRecommendedAgeMonths() <= ageMonths && r.getStatus() != VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
 
-            LocalDate today = LocalDate.now();
-            long days = ChronoUnit.DAYS.between(today, rec.getScheduledDate());
+        List<VaccinationRecord> upcomingFuture = records.stream()
+            .filter(r -> r.getVaccine().getRecommendedAgeMonths() > ageMonths && r.getStatus() != VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
 
-            if (rec.getStatus() == VaccineStatus.COMPLETED) {
-                sb.append("[Concluída] ").append(rec.getVaccine().getName()).append("\n");
-            } else if (days < 0) {
-                sb.append("[Atraso] ").append(rec.getVaccine().getName()).append(" (atraso de ").append(Math.abs(days)).append(" dias)\n");
-            } else if (days == 0) {
-                sb.append("[Hoje] ").append(rec.getVaccine().getName()).append(" - Hoje!\n");
-            } else {
-                sb.append("[Pendente] ").append(rec.getVaccine().getName()).append(" - ")
-                  .append(rec.getScheduledDate().toString())
-                  .append(" (em ").append(days).append(" dias)\n");
+        List<VaccinationRecord> completed = records.stream()
+            .filter(r -> r.getStatus() == VaccineStatus.COMPLETED)
+            .collect(java.util.stream.Collectors.toList());
+
+        if (!overdueOrPending.isEmpty()) {
+            sb.append("\nEM FALTA / PENDENTES (").append(overdueOrPending.size()).append("):\n");
+            for (VaccinationRecord rec : overdueOrPending) {
+                sb.append("• [").append(rec.getVaccine().getRecommendedAgeMonths()).append("M] ")
+                  .append(rec.getVaccine().getName()).append("\n");
             }
-            count++;
+        } else {
+            sb.append("\nBEM VACINADO(A)! Vacinas da sua idade estão em dia.\n");
+        }
+
+        if (!upcomingFuture.isEmpty()) {
+            sb.append("\nPRÓXIMAS DOSES (Futuras):\n");
+            int count = 0;
+            for (VaccinationRecord rec : upcomingFuture) {
+                if (count >= 3) break;
+                sb.append("• [").append(rec.getVaccine().getRecommendedAgeMonths()).append("M] ")
+                  .append(rec.getVaccine().getName()).append("\n");
+                count++;
+            }
+        }
+
+        if (!completed.isEmpty()) {
+            sb.append("\nVACINAS TOMADAS: ").append(completed.size()).append(" de ").append(records.size());
         }
 
         return sb.toString();
