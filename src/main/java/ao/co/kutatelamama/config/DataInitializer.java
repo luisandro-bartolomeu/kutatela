@@ -105,82 +105,81 @@ public class DataInitializer implements CommandLineRunner {
 
         List<Vaccine> allVaccines = vaccineRepository.findAllByOrderByRecommendedAgeMonthsAsc();
 
-        // Baby 1: Mateus Chitumba (2 Meses) - PENDENTE
-        Mother mother1 = new Mother("+244923111222", "Maria Chitumba", "Huambo", "Caála", Language.PORTUGUESE);
+        // Baby 1: Domingos Kiala (0 Meses) - Luanda - PENDENTE (Vacinas ao Nascer pendentes)
+        Mother mother1 = new Mother("+244923111222", "Ana Kiala", "Luanda", "Cazenga", Language.PORTUGUESE);
         motherRepository.save(mother1);
-        Baby baby1 = new Baby(mother1, "Mateus Chitumba", "M", LocalDate.now().minusMonths(2).minusDays(5));
+        Baby baby1 = new Baby(mother1, "Domingos Kiala", "M", LocalDate.now().minusDays(10));
         babyRepository.save(baby1);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby1.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
-            VaccineStatus status = v.getRecommendedAgeMonths() == 0 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            LocalDate administered = status == VaccineStatus.COMPLETED ? baby1.getBirthDate() : null;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby1, v, scheduledDate, status, "Centro de Saúde Materno-Infantil da Caála"));
+            VaccineStatus status = VaccineStatus.SCHEDULED; // Vacinas de 0M em falta
+            vaccinationRecordRepository.save(new VaccinationRecord(baby1, v, scheduledDate, status, "Centro de Saúde do Cazenga"));
         }
 
-        // Baby 2: Esperança Ngove (0 Meses) - BEM VACINADA
-        Mother mother2 = new Mother("+244934555666", "Teresa Ngove", "Benguela", "Lobito", Language.UMBUNDU);
+        // Baby 2: Yara Manuel (0 Meses) - Luanda - BEM VACINADA (Vacinas ao Nascer tomadas)
+        Mother mother2 = new Mother("+244925888999", "Beatriz Manuel", "Luanda", "Maianga", Language.PORTUGUESE);
         motherRepository.save(mother2);
-        Baby baby2 = new Baby(mother2, "Esperança Ngove", "F", LocalDate.now().minusWeeks(3));
+        Baby baby2 = new Baby(mother2, "Yara Manuel", "F", LocalDate.now().minusWeeks(2));
         babyRepository.save(baby2);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby2.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
             VaccineStatus status = v.getRecommendedAgeMonths() == 0 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby2, v, scheduledDate, status, "Hospital Geral do Lobito - Pediatria"));
+            vaccinationRecordRepository.save(new VaccinationRecord(baby2, v, scheduledDate, status, "Maternidade Lucrécia Paim"));
         }
 
-        // Baby 3: Domingos Kiala (2 Meses) - BEM VACINADO
-        Mother mother3 = new Mother("+244925888999", "Ana Kiala", "Luanda", "Cazenga", Language.PORTUGUESE);
+        // Baby 3: Mateus Chitumba (2 Meses) - Luanda - PENDENTE
+        Mother mother3 = new Mother("+244934555666", "Maria Chitumba", "Luanda", "Viana", Language.PORTUGUESE);
         motherRepository.save(mother3);
-        Baby baby3 = new Baby(mother3, "Domingos Kiala", "M", LocalDate.now().minusMonths(2).minusDays(10));
+        Baby baby3 = new Baby(mother3, "Mateus Chitumba", "M", LocalDate.now().minusMonths(2).minusDays(5));
         babyRepository.save(baby3);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby3.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
-            VaccineStatus status = v.getRecommendedAgeMonths() <= 2 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby3, v, scheduledDate, status, "Centro de Saúde do Cazenga"));
+            VaccineStatus status = v.getRecommendedAgeMonths() == 0 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
+            vaccinationRecordRepository.save(new VaccinationRecord(baby3, v, scheduledDate, status, "Hospital Materno-Infantil Azancot de Menezes"));
         }
 
-        // Baby 4: Ana Paula Afonso (4 Meses) - PENDENTE
-        Mother mother4 = new Mother("+244941222333", "Madalena Afonso", "Bié", "Kuito", Language.PORTUGUESE);
+        // Baby 4: Esperança Ngove (0 Meses) - Benguela - BEM VACINADA
+        Mother mother4 = new Mother("+244941222333", "Teresa Ngove", "Benguela", "Lobito", Language.UMBUNDU);
         motherRepository.save(mother4);
-        Baby baby4 = new Baby(mother4, "Ana Paula Afonso", "F", LocalDate.now().minusMonths(4).minusDays(3));
+        Baby baby4 = new Baby(mother4, "Esperança Ngove", "F", LocalDate.now().minusWeeks(3));
         babyRepository.save(baby4);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby4.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
-            VaccineStatus status = v.getRecommendedAgeMonths() <= 2 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby4, v, scheduledDate, status, "Hospital Provincial do Bié"));
+            VaccineStatus status = v.getRecommendedAgeMonths() == 0 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
+            vaccinationRecordRepository.save(new VaccinationRecord(baby4, v, scheduledDate, status, "Hospital Geral do Lobito - Pediatria"));
         }
 
-        // Baby 5: João Baptista (6 Meses) - BEM VACINADO
-        Mother mother5 = new Mother("+244912777444", "Rosa Baptista", "Uíge", "Uíge", Language.PORTUGUESE);
+        // Baby 5: Ana Paula Afonso (4 Meses) - Bié - PENDENTE
+        Mother mother5 = new Mother("+244912777444", "Madalena Afonso", "Bié", "Kuito", Language.PORTUGUESE);
         motherRepository.save(mother5);
-        Baby baby5 = new Baby(mother5, "João Baptista", "M", LocalDate.now().minusMonths(6));
+        Baby baby5 = new Baby(mother5, "Ana Paula Afonso", "F", LocalDate.now().minusMonths(4).minusDays(3));
         babyRepository.save(baby5);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby5.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
-            VaccineStatus status = v.getRecommendedAgeMonths() <= 6 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby5, v, scheduledDate, status, "Hospital Geral do Uíge"));
+            VaccineStatus status = v.getRecommendedAgeMonths() <= 2 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
+            vaccinationRecordRepository.save(new VaccinationRecord(baby5, v, scheduledDate, status, "Hospital Provincial do Bié"));
         }
 
-        // Baby 6: Lúcio Cassoma (9 Meses) - PENDENTE
-        Mother mother6 = new Mother("+244955111000", "Helena Cassoma", "Huíla", "Lubango", Language.PORTUGUESE);
+        // Baby 6: João Baptista (6 Meses) - Uíge - BEM VACINADO
+        Mother mother6 = new Mother("+244955111000", "Rosa Baptista", "Uíge", "Uíge", Language.PORTUGUESE);
         motherRepository.save(mother6);
-        Baby baby6 = new Baby(mother6, "Lúcio Cassoma", "M", LocalDate.now().minusMonths(9).minusDays(2));
+        Baby baby6 = new Baby(mother6, "João Baptista", "M", LocalDate.now().minusMonths(6));
         babyRepository.save(baby6);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby6.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
             VaccineStatus status = v.getRecommendedAgeMonths() <= 6 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby6, v, scheduledDate, status, "Centro Materno-Infantil da Humpata"));
+            vaccinationRecordRepository.save(new VaccinationRecord(baby6, v, scheduledDate, status, "Hospital Geral do Uíge"));
         }
 
-        // Baby 7: Vitória Sebastião (12 Meses) - BEM VACINADA
-        Mother mother7 = new Mother("+244933999111", "Isabel Sebastião", "Malanje", "Malanje", Language.PORTUGUESE);
+        // Baby 7: Lúcio Cassoma (9 Meses) - Huíla - PENDENTE
+        Mother mother7 = new Mother("+244933999111", "Helena Cassoma", "Huíla", "Lubango", Language.PORTUGUESE);
         motherRepository.save(mother7);
-        Baby baby7 = new Baby(mother7, "Vitória Sebastião", "F", LocalDate.now().minusMonths(12));
+        Baby baby7 = new Baby(mother7, "Lúcio Cassoma", "M", LocalDate.now().minusMonths(9).minusDays(2));
         babyRepository.save(baby7);
         for (Vaccine v : allVaccines) {
             LocalDate scheduledDate = baby7.getBirthDate().plusMonths(v.getRecommendedAgeMonths());
-            VaccineStatus status = v.getRecommendedAgeMonths() <= 9 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
-            vaccinationRecordRepository.save(new VaccinationRecord(baby7, v, scheduledDate, status, "Hospital Regional de Malanje"));
+            VaccineStatus status = v.getRecommendedAgeMonths() <= 6 ? VaccineStatus.COMPLETED : VaccineStatus.SCHEDULED;
+            vaccinationRecordRepository.save(new VaccinationRecord(baby7, v, scheduledDate, status, "Centro Materno-Infantil da Humpata"));
         }
     }
 }

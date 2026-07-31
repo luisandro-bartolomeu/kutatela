@@ -18,15 +18,18 @@ public class DashboardService {
     private final BabyRepository babyRepository;
     private final VaccinationService vaccinationService;
     private final SmsService smsService;
+    private final WhatsAppService whatsAppService;
 
     public DashboardService(MotherRepository motherRepository,
                             BabyRepository babyRepository,
                             VaccinationService vaccinationService,
-                            SmsService smsService) {
+                            SmsService smsService,
+                            WhatsAppService whatsAppService) {
         this.motherRepository = motherRepository;
         this.babyRepository = babyRepository;
         this.vaccinationService = vaccinationService;
         this.smsService = smsService;
+        this.whatsAppService = whatsAppService;
     }
 
     public DashboardSummaryDto getSummaryData() {
@@ -111,7 +114,7 @@ public class DashboardService {
         return summary;
     }
 
-    public List<BabyDashboardDto> getBabiesForDashboard(Integer ageMonthsFilter, String statusFilter) {
+    public List<BabyDashboardDto> getBabiesForDashboard(Integer ageMonthsFilter, String statusFilter, String provinceFilter) {
         List<Baby> allBabies = babyRepository.findAll();
         List<BabyDashboardDto> dtos = new ArrayList<>();
 
@@ -121,6 +124,7 @@ public class DashboardService {
             List<VaccinationRecord> completedRecords = vaccinationService.getCompletedVaccinesForBaby(b);
 
             boolean isWell = pendingRecords.isEmpty();
+            Mother m = b.getMother();
 
             // Filter logic
             if (ageMonthsFilter != null && b.getAgeInMonths() != ageMonthsFilter) {
@@ -134,6 +138,11 @@ public class DashboardService {
                     continue;
                 }
             }
+            if (provinceFilter != null && !provinceFilter.isBlank() && !"TODAS".equalsIgnoreCase(provinceFilter)) {
+                if (m == null || m.getProvince() == null || !m.getProvince().equalsIgnoreCase(provinceFilter)) {
+                    continue;
+                }
+            }
 
             BabyDashboardDto dto = new BabyDashboardDto();
             dto.setId(b.getId());
@@ -142,7 +151,6 @@ public class DashboardService {
             dto.setBirthDate(b.getBirthDate());
             dto.setAgeInMonths(b.getAgeInMonths());
 
-            Mother m = b.getMother();
             if (m != null) {
                 dto.setMotherId(m.getId());
                 dto.setMotherName(m.getFullName());
@@ -213,7 +221,12 @@ public class DashboardService {
                 ". Por favor vá ao centro de saúde mais próximo de " + (mother != null && mother.getProvince() != null ? mother.getProvince() : "sua localidade") + ".";
         }
 
-        String channel = request.getChannel() != null ? request.getChannel().toUpperCase() : "SMS";
+        String channel = request.getChannel() != null ? request.getChannel().toUpperCase() : "WHATSAPP";
+        
+        // Envia mensagem via endpoint send do GoWA (WhatsApp)
+        boolean gowaSent = whatsAppService.sendWhatsAppMessage(null, recipientPhone, messageContent);
+        
+        // Regista também no log de SMS/Notificações
         smsService.sendSms(recipientPhone, "ALERT_VACCINE_" + channel, messageContent);
 
         Map<String, Object> res = new HashMap<>();
@@ -222,8 +235,63 @@ public class DashboardService {
         res.put("babyName", baby.getFullName());
         res.put("recipientPhone", recipientPhone);
         res.put("channel", channel);
+        res.put("gowaSent", gowaSent);
         res.put("messageSent", messageContent);
         res.put("sentAt", java.time.LocalDateTime.now());
+        return res;
+    }
+
+    public Map<String, Object> sendGlobalAlertToOverdueMothers(String channel, String customMessageTemplate) {
+        List<Baby> allBabies = babyRepository.findAll();
+        int totalPendingBabies = 0;
+        int mothersNotifiedCount = 0;
+        List<Map<String, Object>> sentDetails = new ArrayList<>();
+        Set<String> notifiedPhones = new HashSet<>();
+
+        for (Baby baby : allBabies) {
+            vaccinationService.ensureVaccinationRecordsExist(baby);
+            List<VaccinationRecord> pending = vaccinationService.getPendingVaccinesForBabyAge(baby);
+            if (!pending.isEmpty()) {
+                totalPendingBabies++;
+                Mother mother = baby.getMother();
+                if (mother != null && mother.getPhoneNumber() != null && !mother.getPhoneNumber().isBlank()) {
+                    String phone = mother.getPhoneNumber();
+                    String pendingVaccinesStr = pending.stream()
+                        .map(r -> r.getVaccine().getName())
+                        .collect(Collectors.joining(", "));
+
+                    String message = (customMessageTemplate != null && !customMessageTemplate.isBlank())
+                        ? customMessageTemplate
+                        : "Kutatela Mama 🌿 (ALERTA GLOBAL): Olá " + mother.getFullName() +
+                          ", o(a) seu(sua) bebé " + baby.getFullName() + " (" + baby.getAgeInMonths() + " meses) tem " +
+                          pending.size() + " vacinas pendentes (" + pendingVaccinesStr +
+                          "). Por favor dirija-se ao centro de saúde mais próximo em " + (mother.getProvince() != null ? mother.getProvince() : "sua província") + ".";
+
+                    boolean gowaSent = whatsAppService.sendWhatsAppMessage(null, phone, message);
+                    smsService.sendSms(phone, "GLOBAL_ALERT_VACCINE", message);
+
+                    if (notifiedPhones.add(phone)) {
+                        mothersNotifiedCount++;
+                    }
+
+                    Map<String, Object> detail = new HashMap<>();
+                    detail.put("babyId", baby.getId());
+                    detail.put("babyName", baby.getFullName());
+                    detail.put("motherName", mother.getFullName());
+                    detail.put("phone", phone);
+                    detail.put("pendingVaccinesCount", pending.size());
+                    detail.put("gowaSent", gowaSent);
+                    sentDetails.add(detail);
+                }
+            }
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("status", "SUCCESS");
+        res.put("message", "Alerta global disparado via GOWA WhatsApp para " + mothersNotifiedCount + " mães em atraso.");
+        res.put("mothersNotified", mothersNotifiedCount);
+        res.put("totalBabiesWithPending", totalPendingBabies);
+        res.put("sentDetails", sentDetails);
         return res;
     }
 }

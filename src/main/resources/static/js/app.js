@@ -14,6 +14,7 @@ async function loadDashboardData() {
     try {
         const ageFilter = document.getElementById("selectAgeFilter").value;
         const statusFilter = document.getElementById("selectStatusFilter").value;
+        const provinceFilter = document.getElementById("selectProvinceFilter").value;
 
         // Fetch Summary Stats
         const summaryRes = await fetch("/api/v1/dashboard/summary");
@@ -22,10 +23,11 @@ async function loadDashboardData() {
             renderSummaryMetrics(summary);
         }
 
-        // Fetch Babies List
+        // Fetch Babies List from Database
         let babiesUrl = "/api/v1/dashboard/babies?";
-        if (ageFilter) babiesUrl += `ageMonths=${ageFilter}&`;
+        if (ageFilter !== "") babiesUrl += `ageMonths=${ageFilter}&`;
         if (statusFilter) babiesUrl += `status=${statusFilter}&`;
+        if (provinceFilter) babiesUrl += `province=${encodeURIComponent(provinceFilter)}&`;
 
         const babiesRes = await fetch(babiesUrl);
         if (babiesRes.ok) {
@@ -70,7 +72,7 @@ function renderBabiesTable(babies) {
             <tr>
                 <td colspan="6" class="text-center py-4 text-muted">
                     <i class="fa-solid fa-folder-open fa-2x"></i>
-                    <p class="mt-2">Nenhum bebé encontrado com os filtros aplicados.</p>
+                    <p class="mt-2">Nenhum bebé encontrado na base de dados com os filtros aplicados.</p>
                 </td>
             </tr>
         `;
@@ -108,7 +110,7 @@ function renderBabiesTable(babies) {
                     </div>
                 </td>
                 <td>
-                    <div>${escapeHtml(b.province || 'Angola')}</div>
+                    <div>${escapeHtml(b.province || 'Luanda')}</div>
                     <div style="font-size: 0.8rem; color: #64748b;">${escapeHtml(b.municipality || '')}</div>
                 </td>
                 <td>${statusBadge}</td>
@@ -116,10 +118,7 @@ function renderBabiesTable(babies) {
                 <td>
                     <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                         <button class="btn btn-primary btn-action" onclick="openSendAlertModal(${b.id})">
-                            <i class="fa-solid fa-paper-plane"></i> Alerta
-                        </button>
-                        <button class="btn btn-success btn-action" onclick="openRegisterVaccineModal(${b.id})">
-                            <i class="fa-solid fa-syringe"></i> Marcar
+                            <i class="fa-brands fa-whatsapp"></i> Alerta GOWA
                         </button>
                     </div>
                 </td>
@@ -146,7 +145,7 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove("active");
 }
 
-/* Send Alert Modal Logic */
+/* Send Individual Alert Modal Logic */
 function openSendAlertModal(babyId) {
     const baby = currentBabies.find(b => b.id === babyId);
     if (!baby) return;
@@ -159,7 +158,7 @@ function openSendAlertModal(babyId) {
         pendingList = baby.pendingVaccines.map(v => v.vaccineName).join(", ");
     }
 
-    const defaultMsg = `Kutatela Mama 🌿: Olá ${baby.motherName}, lembramos que o(a) bebé ${baby.fullName} (${baby.ageInMonths} meses) possui vacinas pendentes para o seu mês: ${pendingList || 'Vacinas do mês'}. Por favor dirija-se ao posto de saúde da sua localidade (${baby.province}).`;
+    const defaultMsg = `Kutatela Mama 🌿: Olá ${baby.motherName}, lembramos que o(a) bebé ${baby.fullName} (${baby.ageInMonths} meses) possui vacinas pendentes para o seu mês: ${pendingList || 'Vacinas do mês'}. Por favor dirija-se ao posto de saúde da sua localidade (${baby.province || 'Luanda'}).`;
     
     document.getElementById("alertMessageText").value = defaultMsg;
     document.getElementById("modalAlert").classList.add("active");
@@ -169,7 +168,7 @@ async function handleSendAlertSubmit(event) {
     event.preventDefault();
     const btn = document.getElementById("btnSubmitAlert");
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Enviar...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Enviar via GOWA...`;
 
     try {
         const babyId = parseInt(document.getElementById("alertBabyId").value);
@@ -184,84 +183,53 @@ async function handleSendAlertSubmit(event) {
 
         if (res.ok) {
             const data = await res.json();
-            alert(`✅ Alerta enviado com sucesso via ${channel} para ${data.recipientPhone}!`);
+            alert(`✅ Alerta enviado com sucesso via GOWA WhatsApp (${channel}) para ${data.recipientPhone}!`);
             closeModal("modalAlert");
         } else {
-            alert("❌ Falha ao enviar alerta. Verifique os dados.");
+            alert("❌ Falha ao enviar alerta. Verifique a ligação com o GOWA.");
         }
     } catch (err) {
         console.error("Erro ao enviar alerta:", err);
-        alert("❌ Ocorreu um erro na ligação.");
+        alert("❌ Ocorreu um erro na ligação com o servidor.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar Alerta Agora`;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar Alerta GOWA`;
     }
 }
 
-/* Register Vaccine Modal Logic */
-function openRegisterVaccineModal(babyId) {
-    const baby = currentBabies.find(b => b.id === babyId);
-    if (!baby) return;
-
-    document.getElementById("regBabyId").value = baby.id;
-    document.getElementById("regBabyName").value = `${baby.fullName} (${baby.ageInMonths} Meses)`;
-    document.getElementById("regAdminDate").value = new Date().toISOString().split('T')[0];
-
-    const selectVaccine = document.getElementById("regSelectVaccine");
-    selectVaccine.innerHTML = "";
-
-    if (baby.pendingVaccines && baby.pendingVaccines.length > 0) {
-        baby.pendingVaccines.forEach(v => {
-            const opt = document.createElement("option");
-            opt.value = v.id; // recordId
-            opt.innerText = `🔴 [${v.recommendedAgeMonths}M] ${v.vaccineName}`;
-            selectVaccine.appendChild(opt);
-        });
-    } else {
-        const opt = document.createElement("option");
-        opt.innerText = "Todas vacinas do mês já concluídas";
-        opt.value = "";
-        selectVaccine.appendChild(opt);
-    }
-
-    document.getElementById("modalRegisterVaccine").classList.add("active");
+/* Global Alert Modal Logic for All Overdue Mothers */
+function openGlobalAlertModal() {
+    document.getElementById("modalGlobalAlert").classList.add("active");
 }
 
-async function handleRegisterVaccineSubmit(event) {
+async function handleSendGlobalAlertSubmit(event) {
     event.preventDefault();
-    const btn = document.getElementById("btnSubmitReg");
+    const btn = document.getElementById("btnSubmitGlobalAlert");
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Salvar...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Disparar Alerta Global...`;
 
     try {
-        const recordId = parseInt(document.getElementById("regSelectVaccine").value);
-        const administeredDate = document.getElementById("regAdminDate").value;
-        const healthCenterName = document.getElementById("regHealthCenter").value;
+        const customMessage = document.getElementById("globalAlertMessageText").value;
 
-        if (!recordId) {
-            alert("Por favor selecione uma vacina válida.");
-            return;
-        }
-
-        const res = await fetch("/api/v1/vaccinations/mark-completed", {
+        const res = await fetch("/api/v1/dashboard/send-global-alert", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ recordId, administeredDate, healthCenterName })
+            body: JSON.stringify({ channel: "WHATSAPP", message: customMessage })
         });
 
         if (res.ok) {
-            alert("✅ Vacina marcada como CONCLUÍDA com sucesso!");
-            closeModal("modalRegisterVaccine");
-            loadDashboardData();
+            const data = await res.json();
+            alert(`📢 ALERTA GLOBAL DISPARADO!\n\n${data.message}\n• Mães Notificadas: ${data.mothersNotified}\n• Bebés com Vacinas em Falta: ${data.totalBabiesWithPending}`);
+            closeModal("modalGlobalAlert");
         } else {
-            alert("❌ Falha ao marcar vacina como concluída.");
+            alert("❌ Falha ao disparar alerta global.");
         }
     } catch (err) {
-        console.error("Erro ao marcar vacina:", err);
-        alert("❌ Erro de ligação com o servidor.");
+        console.error("Erro ao disparar alerta global:", err);
+        alert("❌ Ocorreu um erro de ligação.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> Salvar Registo de Vacina`;
+        btn.innerHTML = `<i class="fa-solid fa-bullhorn"></i> Disparar Alerta Global Agora`;
     }
 }
 

@@ -29,17 +29,29 @@ public class ReminderSchedulerService {
     private final MotherRepository motherRepository;
     private final BabyRepository babyRepository;
     private final SmsService smsService;
+    private final WhatsAppService whatsAppService;
 
     public ReminderSchedulerService(VaccinationRecordRepository vaccinationRecordRepository,
                                     WeeklyTipRepository weeklyTipRepository,
                                     MotherRepository motherRepository,
                                     BabyRepository babyRepository,
-                                    SmsService smsService) {
+                                    SmsService smsService,
+                                    WhatsAppService whatsAppService) {
         this.vaccinationRecordRepository = vaccinationRecordRepository;
         this.weeklyTipRepository = weeklyTipRepository;
         this.motherRepository = motherRepository;
         this.babyRepository = babyRepository;
         this.smsService = smsService;
+        this.whatsAppService = whatsAppService;
+    }
+
+    /**
+     * Scheduled task running daily to send automatic alerts for all mothers with pending vaccines
+     */
+    @Scheduled(cron = "0 0 8 * * ?") // Every day at 8:00 AM
+    public void sendAutomaticPendingVaccineAlerts() {
+        log.info("[SCHEDULER] Running automatic pending vaccination alert check...");
+        triggerAutomaticPendingVaccineAlerts();
     }
 
     /**
@@ -49,6 +61,35 @@ public class ReminderSchedulerService {
     public void sendVaccinationReminders() {
         log.info("[SCHEDULER] Running daily vaccination reminder check...");
         triggerVaccinationReminders();
+    }
+
+    public int triggerAutomaticPendingVaccineAlerts() {
+        List<Baby> babies = babyRepository.findAll();
+        int alertCount = 0;
+        for (Baby baby : babies) {
+            List<VaccinationRecord> pending = vaccinationRecordRepository.findByBabyOrderByScheduledDateAsc(baby).stream()
+                    .filter(r -> r.getVaccine().getRecommendedAgeMonths() <= baby.getAgeInMonths())
+                    .filter(r -> r.getStatus() != VaccineStatus.COMPLETED)
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (!pending.isEmpty() && baby.getMother() != null) {
+                Mother mother = baby.getMother();
+                String pendingNames = pending.stream().map(r -> r.getVaccine().getName()).collect(java.util.stream.Collectors.joining(", "));
+                String message = String.format(
+                    "Kutatela Mama 🌿 (Alerta Automático): Olá %s, o(a) bebé %s (%d meses) tem %d vacina(s) em falta (%s). Leve o seu bebé ao posto de saúde mais próximo!",
+                    mother.getFullName(),
+                    baby.getFullName(),
+                    baby.getAgeInMonths(),
+                    pending.size(),
+                    pendingNames
+                );
+                whatsAppService.sendWhatsAppMessage(null, mother.getPhoneNumber(), message);
+                smsService.sendSms(mother.getPhoneNumber(), "AUTO_VACCINE_ALERT", message);
+                alertCount++;
+            }
+        }
+        log.info("[SCHEDULER] Disparo automático concluído. Enviados {} alertas de vacinas pendentes via GOWA WhatsApp & SMS.", alertCount);
+        return alertCount;
     }
 
     /**

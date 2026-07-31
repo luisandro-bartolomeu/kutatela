@@ -22,6 +22,9 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button class="btn btn-warning" onclick="openGlobalAlertModal()">
+                    <i class="fa-solid fa-bullhorn"></i> Alerta Global (Mães em Atraso)
+                </button>
                 <button class="btn btn-outline" id="btnRefresh" onclick="loadDashboardData()">
                     <i class="fa-solid fa-rotate-right"></i> Atualizar Dados
                 </button>
@@ -38,7 +41,7 @@
         <section class="hero-card">
             <div class="hero-content">
                 <h2>Painel de Acompanhamento da Imunização Infantil</h2>
-                <p>Monitorização em tempo real das vacinas dos bebés registados por idade (em meses), identificando recém-nascidos com vacinas em falta e permitindo o disparo imediato de alertas para as mães via SMS e WhatsApp.</p>
+                <p>Monitorização em tempo real das vacinas dos bebés registados na base de dados (SQLite permanente). Identificação automática de vacinas pendentes e disparo de alertas individuais ou globais para as mães via GOWA WhatsApp API e SMS.</p>
             </div>
             <div class="hero-badge">
                 <i class="fa-solid fa-shield-heart"></i>
@@ -77,7 +80,7 @@
                 <div class="metric-info">
                     <span class="metric-label">Com Vacinas em Falta</span>
                     <h3 class="metric-value text-danger" id="valPendingVaccinated">-</h3>
-                    <span class="metric-sub">Necessitam de alerta/Posto</span>
+                    <span class="metric-sub">Alerta GOWA / Posto</span>
                 </div>
             </div>
 
@@ -104,11 +107,36 @@
 
             <div class="filters-group">
                 <div class="filter-item">
-                    <label><i class="fa-solid fa-filter"></i> Status de Vacinação:</label>
+                    <label><i class="fa-solid fa-location-dot"></i> Província:</label>
+                    <select id="selectProvinceFilter" onchange="loadDashboardData()">
+                        <option value="">Todas as Províncias</option>
+                        <option value="Luanda" selected>Luanda</option>
+                        <option value="Bengo">Bengo</option>
+                        <option value="Benguela">Benguela</option>
+                        <option value="Bié">Bié</option>
+                        <option value="Cabinda">Cabinda</option>
+                        <option value="Cuando Cubango">Cuando Cubango</option>
+                        <option value="Cuanza Norte">Cuanza Norte</option>
+                        <option value="Cuanza Sul">Cuanza Sul</option>
+                        <option value="Cunene">Cunene</option>
+                        <option value="Huambo">Huambo</option>
+                        <option value="Huíla">Huíla</option>
+                        <option value="Lunda Norte">Lunda Norte</option>
+                        <option value="Lunda Sul">Lunda Sul</option>
+                        <option value="Malanje">Malanje</option>
+                        <option value="Moxico">Moxico</option>
+                        <option value="Namibe">Namibe</option>
+                        <option value="Uíge">Uíge</option>
+                        <option value="Zaire">Zaire</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label><i class="fa-solid fa-filter"></i> Status:</label>
                     <select id="selectStatusFilter" onchange="loadDashboardData()">
                         <option value="">Todos os Bebés</option>
-                        <option value="PENDING" selected>🔴 Com Vacinas em Falta / Pendentes</option>
-                        <option value="WELL_VACCINATED">🟢 Bem Vacinados para o Mês</option>
+                        <option value="PENDING" selected>🔴 Vacinas em Falta / Pendentes</option>
+                        <option value="WELL_VACCINATED">🟢 Bem Vacinados</option>
                     </select>
                 </div>
 
@@ -116,7 +144,7 @@
                     <label><i class="fa-solid fa-calendar-days"></i> Idade do Bebé:</label>
                     <select id="selectAgeFilter" onchange="loadDashboardData()">
                         <option value="">Todas as Idades</option>
-                        <option value="0">0 Meses (Ao Nascer)</option>
+                        <option value="0" selected>0 Meses (Ao Nascer)</option>
                         <option value="2">2 Meses</option>
                         <option value="4">4 Meses</option>
                         <option value="6">6 Meses</option>
@@ -129,8 +157,8 @@
 
         <!-- Age Milestone Tabs -->
         <section class="tabs-container">
-            <button class="tab-btn active" data-age="" onclick="setAgeTab(this, '')">Todos</button>
-            <button class="tab-btn" data-age="0" onclick="setAgeTab(this, '0')">👶 0 Meses (Ao Nascer)</button>
+            <button class="tab-btn" data-age="" onclick="setAgeTab(this, '')">Todos</button>
+            <button class="tab-btn active" data-age="0" onclick="setAgeTab(this, '0')">👶 0 Meses (Ao Nascer)</button>
             <button class="tab-btn" data-age="2" onclick="setAgeTab(this, '2')">🍼 2 Meses</button>
             <button class="tab-btn" data-age="4" onclick="setAgeTab(this, '4')">🧸 4 Meses</button>
             <button class="tab-btn" data-age="6" onclick="setAgeTab(this, '6')">🥣 6 Meses</button>
@@ -141,7 +169,7 @@
         <!-- Baby Records Table & Cards Section -->
         <section class="table-section">
             <div class="section-header">
-                <h3><i class="fa-solid fa-list-check"></i> Relação de Bebés e Estado Vacinal</h3>
+                <h3><i class="fa-solid fa-list-check"></i> Relação de Bebés na Base de Dados</h3>
                 <span class="badge badge-neutral" id="lblRecordsCount">0 Bebés</span>
             </div>
 
@@ -170,11 +198,11 @@
         </section>
     </main>
 
-    <!-- Modal: Send Alert to Mother -->
+    <!-- Modal: Send Individual Alert to Mother -->
     <div class="modal-backdrop" id="modalAlert">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-paper-plane text-primary"></i> Enviar Alerta de Vacinação à Mãe</h3>
+                <h3><i class="fa-brands fa-whatsapp text-success"></i> Enviar Alerta de Vacinação via GOWA / WhatsApp</h3>
                 <button class="modal-close" onclick="closeModal('modalAlert')">&times;</button>
             </div>
             <div class="modal-body">
@@ -190,12 +218,12 @@
                         <label>Canal de Envio:</label>
                         <div class="radio-group">
                             <label class="radio-label">
-                                <input type="radio" name="alertChannel" value="SMS" checked>
-                                <span><i class="fa-solid fa-comment-sms text-info"></i> SMS (Africa's Talking)</span>
+                                <input type="radio" name="alertChannel" value="WHATSAPP" checked>
+                                <span><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp GOWA (send endpoint)</span>
                             </label>
                             <label class="radio-label">
-                                <input type="radio" name="alertChannel" value="WHATSAPP">
-                                <span><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp (Gowa)</span>
+                                <input type="radio" name="alertChannel" value="SMS">
+                                <span><i class="fa-solid fa-comment-sms text-info"></i> SMS (Africa's Talking)</span>
                             </label>
                         </div>
                     </div>
@@ -203,13 +231,12 @@
                     <div class="form-group">
                         <label>Conteúdo da Mensagem de Alerta:</label>
                         <textarea id="alertMessageText" class="form-control" rows="4"></textarea>
-                        <small class="form-text text-muted">Pode personalizar a mensagem ou manter o texto sugerido pelo sistema.</small>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" onclick="closeModal('modalAlert')">Cancelar</button>
                         <button type="submit" class="btn btn-primary" id="btnSubmitAlert">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar Alerta Agora
+                            <i class="fa-solid fa-paper-plane"></i> Enviar Alerta GOWA
                         </button>
                     </div>
                 </form>
@@ -217,43 +244,28 @@
         </div>
     </div>
 
-    <!-- Modal: Register Vaccine Administered -->
-    <div class="modal-backdrop" id="modalRegisterVaccine">
+    <!-- Modal: Send Global Alert to All Overdue Mothers -->
+    <div class="modal-backdrop" id="modalGlobalAlert">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-syringe text-success"></i> Registo de Vacina Administrada</h3>
-                <button class="modal-close" onclick="closeModal('modalRegisterVaccine')">&times;</button>
+                <h3><i class="fa-solid fa-bullhorn text-warning"></i> Alerta Global para TODAS as Mães com Vacinas em Falta</h3>
+                <button class="modal-close" onclick="closeModal('modalGlobalAlert')">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="formRegisterVaccine" onsubmit="handleRegisterVaccineSubmit(event)">
-                    <input type="hidden" id="regBabyId">
-
+                <form id="formSendGlobalAlert" onsubmit="handleSendGlobalAlertSubmit(event)">
                     <div class="form-group">
-                        <label>Bebé:</label>
-                        <input type="text" id="regBabyName" class="form-control" readonly>
+                        <p class="text-muted mb-2">Este botão enviará uma notificação automática via <strong>GOWA WhatsApp / SMS</strong> para <strong>todas as mães</strong> cujos bebés possuem vacinas pendentes para a sua idade na base de dados.</p>
                     </div>
 
                     <div class="form-group">
-                        <label>Selecione a Vacina Administrada:</label>
-                        <select id="regSelectVaccine" class="form-control" required>
-                            <!-- Options dynamically loaded -->
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Data de Administração:</label>
-                        <input type="date" id="regAdminDate" class="form-control" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Centro de Saúde / Posto de Vacinação:</label>
-                        <input type="text" id="regHealthCenter" class="form-control" value="Centro de Saúde Materno-Infantil">
+                        <label>Mensagem Padrão de Alerta Global (Opcional):</label>
+                        <textarea id="globalAlertMessageText" class="form-control" rows="4" placeholder="Deixe em branco para usar a mensagem personalizada automática por mãe e bebé..."></textarea>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline" onclick="closeModal('modalRegisterVaccine')">Cancelar</button>
-                        <button type="submit" class="btn btn-success" id="btnSubmitReg">
-                            <i class="fa-solid fa-check"></i> Salvar Registo de Vacina
+                        <button type="button" class="btn btn-outline" onclick="closeModal('modalGlobalAlert')">Cancelar</button>
+                        <button type="submit" class="btn btn-warning" id="btnSubmitGlobalAlert">
+                            <i class="fa-solid fa-bullhorn"></i> Disparar Alerta Global Agora
                         </button>
                     </div>
                 </form>
