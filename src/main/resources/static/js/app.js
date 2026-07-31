@@ -118,7 +118,7 @@ function renderBabiesTable(babies) {
                 <td>
                     <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                         <button class="btn btn-primary btn-action" onclick="openSendAlertModal(${b.id})">
-                            <i class="fa-brands fa-whatsapp"></i> Alerta GOWA
+                            <i class="fa-brands fa-whatsapp"></i> Enviar Lembrete
                         </button>
                     </div>
                 </td>
@@ -168,7 +168,7 @@ async function handleSendAlertSubmit(event) {
     event.preventDefault();
     const btn = document.getElementById("btnSubmitAlert");
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Enviar via GOWA...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A enviar lembrete...`;
 
     try {
         const babyId = parseInt(document.getElementById("alertBabyId").value);
@@ -183,17 +183,17 @@ async function handleSendAlertSubmit(event) {
 
         if (res.ok) {
             const data = await res.json();
-            alert(`✅ Alerta enviado com sucesso via GOWA WhatsApp (${channel}) para ${data.recipientPhone}!`);
+            alert(`✅ Lembrete enviado com sucesso por WhatsApp (${channel}) para ${data.recipientPhone}!`);
             closeModal("modalAlert");
         } else {
-            alert("❌ Falha ao enviar alerta. Verifique a ligação com o GOWA.");
+            alert("❌ Falha ao enviar lembrete. Verifique a ligação.");
         }
     } catch (err) {
-        console.error("Erro ao enviar alerta:", err);
+        console.error("Erro ao enviar lembrete:", err);
         alert("❌ Ocorreu um erro na ligação com o servidor.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar Alerta GOWA`;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar Lembrete`;
     }
 }
 
@@ -206,7 +206,7 @@ async function handleSendGlobalAlertSubmit(event) {
     event.preventDefault();
     const btn = document.getElementById("btnSubmitGlobalAlert");
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A Disparar Alerta Global...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> A enviar lembretes gerais...`;
 
     try {
         const customMessage = document.getElementById("globalAlertMessageText").value;
@@ -219,17 +219,17 @@ async function handleSendGlobalAlertSubmit(event) {
 
         if (res.ok) {
             const data = await res.json();
-            alert(`📢 ALERTA GLOBAL DISPARADO!\n\n${data.message}\n• Mães Notificadas: ${data.mothersNotified}\n• Bebés com Vacinas em Falta: ${data.totalBabiesWithPending}`);
+            alert(`📢 LEMBRETES ENVIADOS COM SUCESSO!\n\n${data.message}\n• Mães Notificadas: ${data.mothersNotified}\n• Bebés com Vacinas em Falta: ${data.totalBabiesWithPending}`);
             closeModal("modalGlobalAlert");
         } else {
-            alert("❌ Falha ao disparar alerta global.");
+            alert("❌ Falha ao enviar lembretes.");
         }
     } catch (err) {
-        console.error("Erro ao disparar alerta global:", err);
+        console.error("Erro ao enviar lembretes:", err);
         alert("❌ Ocorreu um erro de ligação.");
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bullhorn"></i> Disparar Alerta Global Agora`;
+        btn.innerHTML = `<i class="fa-solid fa-bullhorn"></i> Enviar Lembretes Agora`;
     }
 }
 

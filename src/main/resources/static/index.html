@@ -23,7 +23,7 @@
             </div>
             <div class="header-actions">
                 <button class="btn btn-warning" onclick="openGlobalAlertModal()">
-                    <i class="fa-solid fa-bullhorn"></i> Alerta Global (Mães em Atraso)
+                    <i class="fa-solid fa-bullhorn"></i> Enviar Lembrete Geral
                 </button>
                 <button class="btn btn-outline" id="btnRefresh" onclick="loadDashboardData()">
                     <i class="fa-solid fa-rotate-right"></i> Atualizar Dados
@@ -41,7 +41,7 @@
         <section class="hero-card">
             <div class="hero-content">
                 <h2>Painel de Acompanhamento da Imunização Infantil</h2>
-                <p>Monitorização em tempo real das vacinas dos bebés registados na base de dados (SQLite permanente). Identificação automática de vacinas pendentes e disparo de alertas individuais ou globais para as mães via GOWA WhatsApp API e SMS.</p>
+                <p>Acompanhamento carinhoso e em tempo real da vacinação das nossas crianças. Identificação automática de vacinas pendentes para cuidar do futuro dos nossos bebés, enviando lembretes diretos para as mães por WhatsApp e SMS.</p>
             </div>
             <div class="hero-badge">
                 <i class="fa-solid fa-shield-heart"></i>
@@ -80,7 +80,7 @@
                 <div class="metric-info">
                     <span class="metric-label">Com Vacinas em Falta</span>
                     <h3 class="metric-value text-danger" id="valPendingVaccinated">-</h3>
-                    <span class="metric-sub">Alerta GOWA / Posto</span>
+                    <span class="metric-sub">Lembrete para o Centro de Saúde</span>
                 </div>
             </div>
 
@@ -169,7 +169,7 @@
         <!-- Baby Records Table & Cards Section -->
         <section class="table-section">
             <div class="section-header">
-                <h3><i class="fa-solid fa-list-check"></i> Relação de Bebés na Base de Dados</h3>
+                <h3><i class="fa-solid fa-list-check"></i> Lista de Bebés Registados</h3>
                 <span class="badge badge-neutral" id="lblRecordsCount">0 Bebés</span>
             </div>
 
@@ -202,7 +202,7 @@
     <div class="modal-backdrop" id="modalAlert">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-brands fa-whatsapp text-success"></i> Enviar Alerta de Vacinação via GOWA / WhatsApp</h3>
+                <h3><i class="fa-brands fa-whatsapp text-success"></i> Enviar Lembrete de Vacinação via WhatsApp</h3>
                 <button class="modal-close" onclick="closeModal('modalAlert')">&times;</button>
             </div>
             <div class="modal-body">
@@ -219,24 +219,24 @@
                         <div class="radio-group">
                             <label class="radio-label">
                                 <input type="radio" name="alertChannel" value="WHATSAPP" checked>
-                                <span><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp GOWA (send endpoint)</span>
+                                <span><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp</span>
                             </label>
                             <label class="radio-label">
                                 <input type="radio" name="alertChannel" value="SMS">
-                                <span><i class="fa-solid fa-comment-sms text-info"></i> SMS (Africa's Talking)</span>
+                                <span><i class="fa-solid fa-comment-sms text-info"></i> SMS</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Conteúdo da Mensagem de Alerta:</label>
+                        <label>Conteúdo da Mensagem de Lembrete:</label>
                         <textarea id="alertMessageText" class="form-control" rows="4"></textarea>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" onclick="closeModal('modalAlert')">Cancelar</button>
                         <button type="submit" class="btn btn-primary" id="btnSubmitAlert">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar Alerta GOWA
+                            <i class="fa-solid fa-paper-plane"></i> Enviar Lembrete
                         </button>
                     </div>
                 </form>
@@ -248,24 +248,24 @@
     <div class="modal-backdrop" id="modalGlobalAlert">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-bullhorn text-warning"></i> Alerta Global para TODAS as Mães com Vacinas em Falta</h3>
+                <h3><i class="fa-solid fa-bullhorn text-warning"></i> Lembrete Geral para Mães com Vacinas Pendentes</h3>
                 <button class="modal-close" onclick="closeModal('modalGlobalAlert')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="formSendGlobalAlert" onsubmit="handleSendGlobalAlertSubmit(event)">
                     <div class="form-group">
-                        <p class="text-muted mb-2">Este botão enviará uma notificação automática via <strong>GOWA WhatsApp / SMS</strong> para <strong>todas as mães</strong> cujos bebés possuem vacinas pendentes para a sua idade na base de dados.</p>
+                        <p class="text-muted mb-2">Esta opção enviará um lembrete carinhoso por <strong>WhatsApp / SMS</strong> para <strong>todas as mães</strong> cujos bebés possuem vacinas pendentes para a sua idade.</p>
                     </div>
 
                     <div class="form-group">
-                        <label>Mensagem Padrão de Alerta Global (Opcional):</label>
-                        <textarea id="globalAlertMessageText" class="form-control" rows="4" placeholder="Deixe em branco para usar a mensagem personalizada automática por mãe e bebé..."></textarea>
+                        <label>Mensagem de Lembrete Geral (Opcional):</label>
+                        <textarea id="globalAlertMessageText" class="form-control" rows="4" placeholder="Deixe em branco para usar a mensagem carinhosa automática por mãe e bebé..."></textarea>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline" onclick="closeModal('modalGlobalAlert')">Cancelar</button>
                         <button type="submit" class="btn btn-warning" id="btnSubmitGlobalAlert">
-                            <i class="fa-solid fa-bullhorn"></i> Disparar Alerta Global Agora
+                            <i class="fa-solid fa-bullhorn"></i> Enviar Lembretes Agora
                         </button>
                     </div>
                 </form>
