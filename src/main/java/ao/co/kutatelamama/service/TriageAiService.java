@@ -26,7 +26,7 @@ public class TriageAiService {
 
     private final TriageRecordRepository triageRecordRepository;
     private final SmsService smsService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${kutatela.ai.deepseek-api-key:${DEEPSEEK_API_KEY:mock_key}}")
@@ -35,9 +35,10 @@ public class TriageAiService {
     @Value("${kutatela.ai.deepseek-url:${DEEPSEEK_URL:https://api.deepseek.com/v1/chat/completions}}")
     private String deepseekUrl;
 
-    public TriageAiService(TriageRecordRepository triageRecordRepository, SmsService smsService) {
+    public TriageAiService(TriageRecordRepository triageRecordRepository, SmsService smsService, RestTemplate restTemplate) {
         this.triageRecordRepository = triageRecordRepository;
         this.smsService = smsService;
+        this.restTemplate = restTemplate;
     }
 
     public TriageRecord performTriage(Mother mother, Baby baby, SymptomCategory category, String detailInput) {

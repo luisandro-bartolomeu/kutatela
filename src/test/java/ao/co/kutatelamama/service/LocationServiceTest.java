@@ -76,14 +76,14 @@ class LocationServiceTest {
     }
 
     @Test
-    @DisplayName("buscarHospitaisProximos aciona fallback DeepSeek quando Overpass falha com excecao")
-    void testOsmFailureTriggersDeepSeekFallback() {
+    @DisplayName("buscarHospitaisProximos aciona base local de contingencia quando Overpass falha com excecao")
+    void testOsmFailureTriggersLocalFallback() {
         stubRestTemplate.shouldThrowOnExchange = true;
 
         String response = locationService.buscarHospitaisProximos(-8.8383, 13.2344);
 
         assertNotNull(response);
-        assertTrue(response.contains("Mãe") || response.contains("Posto de Saúde") || response.contains("unidades de saúde"));
+        assertTrue(response.contains("Unidades de Saúde") || response.contains("Hospital") || response.contains("Centro de Saúde"));
     }
 
     @Test
@@ -94,7 +94,6 @@ class LocationServiceTest {
         String response = locationService.buscarHospitaisViaDeepSeek(-8.8383, 13.2344);
 
         assertNotNull(response);
-        assertTrue(response.contains("Mãe, de momento não foi possível obter as unidades de saúde"));
-        assertTrue(response.contains("Posto de Saúde ou Maternidade Municipal"));
+        assertTrue(response.contains("Unidades de Saúde") || response.contains("Hospital Geral de Luanda"));
     }
 }

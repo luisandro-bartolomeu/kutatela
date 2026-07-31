@@ -149,7 +149,7 @@ public class LocationService {
     @SuppressWarnings("unchecked")
     private List<HealthCenterItem> searchNearestHealthCentersOverpass(double userLat, double userLon) {
         String query = String.format(Locale.US,
-                "[out:json][timeout:8];" +
+                "[out:json][timeout:3];" +
                 "(" +
                 "  node[\"amenity\"~\"hospital|clinic|doctors|health_post\"](around:10000,%.6f,%.6f);" +
                 "  node[\"healthcare\"~\"hospital|clinic|centre\"](around:10000,%.6f,%.6f);" +
@@ -160,7 +160,9 @@ public class LocationService {
                 "out center tags;",
                 userLat, userLon, userLat, userLon, userLat, userLon, userLat, userLon, userLat, userLon);
 
+        int attempts = 0;
         for (String serverUrl : OVERPASS_SERVERS) {
+            if (attempts++ >= 2) break; // Máximo 2 tentativas rápidas para garantir resposta rápida
             try {
                 URI uri = UriComponentsBuilder.fromHttpUrl(serverUrl)
                         .queryParam("data", query)
