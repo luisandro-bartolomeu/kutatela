@@ -6,19 +6,19 @@ spring:
     name: kutatela-mama
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:sqlite:kutatela.db}
+    url: ${SPRING_DATASOURCE_URL:${DATABASE_URL:jdbc:sqlite:kutatela.db}}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.sqlite.JDBC}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    username: ${SPRING_DATASOURCE_USERNAME:${DATABASE_USERNAME:sa}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DATABASE_PASSWORD:}}
 
   jpa:
-    database-platform: ao.co.kutatelamama.config.SQLiteDialect
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:ao.co.kutatelamama.config.SQLiteDialect}
     hibernate:
       ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
 deepseek:
   api:
