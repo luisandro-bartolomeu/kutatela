@@ -54,6 +54,12 @@
             <version>3.45.1.0</version>
         </dependency>
 
+        <!-- Official Hibernate 6 Community Dialects (SQLite, etc.) -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+        </dependency>
+
         <!-- PostgreSQL Database for production -->
         <dependency>
             <groupId>org.postgresql</groupId>

@@ -12,7 +12,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:${DATABASE_PASSWORD:}}
 
   jpa:
-    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:ao.co.kutatelamama.config.SQLiteDialect}
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.community.dialect.SQLiteDialect}
     hibernate:
       ddl-auto: update
     show-sql: false
