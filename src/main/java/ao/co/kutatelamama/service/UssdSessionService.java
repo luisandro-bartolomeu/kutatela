@@ -109,7 +109,7 @@ public class UssdSessionService {
 
         String cleanPhone = motherService.normalizePhoneNumber(phoneNumber);
         Mother mother = motherService.findByPhoneNumber(cleanPhone).orElseGet(() -> {
-            return motherService.registerMotherAndBaby(cleanPhone, "Mãe " + cleanPhone.substring(Math.max(0, cleanPhone.length() - 4)), "Huambo", "Bebé", 2);
+            return motherService.registerMotherAndBaby(cleanPhone, "Mãe " + cleanPhone.substring(Math.max(0, cleanPhone.length() - 4)), "Luanda", "Bebé", 0);
         });
 
         Baby baby = motherService.getOrCreateDefaultBabyForMother(mother);

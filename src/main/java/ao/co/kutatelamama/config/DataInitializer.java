@@ -36,7 +36,6 @@ public class DataInitializer implements CommandLineRunner {
         try {
             initVaccines();
             initWeeklyTips();
-            initSampleData();
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(DataInitializer.class)
                     .warn("[DATA_INITIALIZER] Could not pre-populate data on startup: {}", e.getMessage());

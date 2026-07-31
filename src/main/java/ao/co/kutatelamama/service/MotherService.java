@@ -79,19 +79,29 @@ public class MotherService {
 
     public Mother registerMotherAndBaby(String phone, String motherName, String province, String babyName, int babyAgeMonths) {
         String normalized = normalizePhoneNumber(phone);
+        String targetProvince = (province != null && !province.isBlank()) ? province : "Luanda";
+        String targetMotherName = (motherName != null && !motherName.isBlank()) ? motherName : ("Mãe " + normalized.substring(Math.max(0, normalized.length() - 4)));
+        String targetBabyName = (babyName != null && !babyName.isBlank()) ? babyName : ("Bebé de " + targetMotherName);
+        int validAge = Math.max(0, babyAgeMonths);
+
         Mother mother = findByPhoneNumber(normalized).orElseGet(() -> {
-            Mother m = new Mother(normalized, motherName, province, province, Language.PORTUGUESE);
+            Mother m = new Mother(normalized, targetMotherName, targetProvince, targetProvince, Language.PORTUGUESE);
             return motherRepository.save(m);
         });
 
         mother.setPhoneNumber(normalized);
-        mother.setFullName(motherName);
-        mother.setProvince(province);
+        if (motherName != null && !motherName.isBlank()) {
+            mother.setFullName(targetMotherName);
+        }
+        if (province != null && !province.isBlank()) {
+            mother.setProvince(targetProvince);
+            mother.setMunicipality(targetProvince);
+        }
         motherRepository.save(mother);
 
         Baby baby = getOrCreateDefaultBabyForMother(mother);
-        baby.setFullName(babyName);
-        baby.setBirthDate(LocalDate.now().minusMonths(babyAgeMonths));
+        baby.setFullName(targetBabyName);
+        baby.setBirthDate(LocalDate.now().minusMonths(validAge));
         baby = babyRepository.save(baby);
         vaccinationService.ensureVaccinationRecordsExist(baby);
 
@@ -103,23 +113,24 @@ public class MotherService {
         motherRepository.save(mother);
 
         Baby baby = getOrCreateDefaultBabyForMother(mother);
-        if (baby.getFullName() == null || baby.getFullName().startsWith("Bebe de ")) {
-            baby.setFullName("Bebe de " + motherName);
+        if (baby.getFullName() == null || baby.getFullName().startsWith("Bebé de ")) {
+            baby.setFullName("Bebé de " + motherName);
             babyRepository.save(baby);
         }
         return mother;
     }
 
     public Mother updateProvince(Mother mother, String province) {
-        mother.setProvince(province);
-        mother.setMunicipality(province);
+        String targetProvince = (province != null && !province.isBlank()) ? province : "Luanda";
+        mother.setProvince(targetProvince);
+        mother.setMunicipality(targetProvince);
         motherRepository.save(mother);
         return mother;
     }
 
     public Mother updateBabyAge(Mother mother, int babyAgeMonths) {
         Baby baby = getOrCreateDefaultBabyForMother(mother);
-        baby.setBirthDate(LocalDate.now().minusMonths(babyAgeMonths));
+        baby.setBirthDate(LocalDate.now().minusMonths(Math.max(0, babyAgeMonths)));
         baby = babyRepository.save(baby);
         vaccinationService.ensureVaccinationRecordsExist(baby);
         return mother;
@@ -128,7 +139,7 @@ public class MotherService {
     public Baby getOrCreateDefaultBabyForMother(Mother mother) {
         Baby baby = babyRepository.findFirstByMotherIdOrderByCreatedAtDesc(mother.getId())
             .orElseGet(() -> {
-                Baby b = new Baby(mother, "Bebé de " + mother.getFullName(), "M", LocalDate.now().minusMonths(1));
+                Baby b = new Baby(mother, "Bebé de " + mother.getFullName(), "M", LocalDate.now());
                 return babyRepository.save(b);
             });
         vaccinationService.ensureVaccinationRecordsExist(baby);
