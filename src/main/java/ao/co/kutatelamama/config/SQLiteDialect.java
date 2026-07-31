@@ -46,14 +46,4 @@ public class SQLiteDialect extends Dialect {
             }
         };
     }
-
-    @Override
-    public boolean supportsLimit() {
-        return true;
-    }
-
-    @Override
-    public String getLimitString(String query, boolean hasOffset) {
-        return query + (hasOffset ? " limit ? offset ?" : " limit ?");
-    }
 }
